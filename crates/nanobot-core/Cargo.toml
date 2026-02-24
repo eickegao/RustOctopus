@@ -1,0 +1,24 @@
+[package]
+name = "nanobot-core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+async-trait = { workspace = true }
+tracing = { workspace = true }
+reqwest = { workspace = true }
+regex = { workspace = true }
+uuid = { workspace = true }
+glob = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+dirs = { workspace = true }
+cron = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util"] }
+tempfile = "3"
