@@ -436,8 +436,8 @@ fn start_bridge_process(port: u16, config: &WhatsAppConfig) -> Result<Child> {
     let mut cmd = tokio::process::Command::new("node");
     cmd.arg(&dist_entry)
         .env("BRIDGE_PORT", port.to_string())
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::inherit())
+        .stderr(std::process::Stdio::inherit())
         .kill_on_drop(true);
 
     if let Some(ref token) = config.bridge_token {
