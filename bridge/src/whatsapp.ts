@@ -124,7 +124,7 @@ export class WhatsAppClient {
         this.options.onMessage({
           id: msg.key.id || '',
           sender: msg.key.remoteJid || '',
-          pn: msg.key.remoteJidAlt || '',
+          pn: msg.pushName || '',
           content,
           timestamp: msg.messageTimestamp as number,
           isGroup,
