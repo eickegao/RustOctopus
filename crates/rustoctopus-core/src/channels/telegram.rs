@@ -171,7 +171,7 @@ async fn handle_message(bot: Bot, msg: Message, bus: MessageBus, allow_from: &[S
     if let Some(text) = msg.text() {
         if text == "/start" {
             let greeting = format!(
-                "Hi {}! I'm nanobot.\n\nSend me a message and I'll respond!\nType /help to see available commands.",
+                "Hi {}! I'm RustOctopus.\n\nSend me a message and I'll respond!\nType /help to see available commands.",
                 user.first_name
             );
             let _ = bot.send_message(msg.chat.id, greeting).await;
@@ -180,7 +180,7 @@ async fn handle_message(bot: Bot, msg: Message, bus: MessageBus, allow_from: &[S
 
         // Handle /help command (no ACL check)
         if text == "/help" {
-            let help = "nanobot commands:\n/new — Start a new conversation\n/help — Show available commands";
+            let help = "RustOctopus commands:\n/new — Start a new conversation\n/help — Show available commands";
             let _ = bot.send_message(msg.chat.id, help).await;
             return;
         }

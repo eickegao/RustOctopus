@@ -1,8 +1,8 @@
 use anyhow::Result;
-use nanobot_core::agent::agent_loop::AgentLoop;
-use nanobot_core::bus::queue::MessageBus;
-use nanobot_core::config::factory::create_provider;
-use nanobot_core::config::schema::Config;
+use rustoctopus_core::agent::agent_loop::AgentLoop;
+use rustoctopus_core::bus::queue::MessageBus;
+use rustoctopus_core::config::factory::create_provider;
+use rustoctopus_core::config::schema::Config;
 
 /// Run a single message through the agent and print the response.
 pub async fn run_single(message: &str, session_id: &str, config: Config) -> Result<()> {
@@ -16,7 +16,7 @@ pub async fn run_single(message: &str, session_id: &str, config: Config) -> Resu
 
 /// Run the agent in interactive REPL mode with rustyline.
 pub async fn run_interactive(session_id: &str, config: Config) -> Result<()> {
-    println!("nanobot interactive mode. Type 'exit' to quit.\n");
+    println!("RustOctopus interactive mode. Type 'exit' to quit.\n");
 
     let provider = create_provider(&config)?;
     let (bus, inbound_rx, _outbound_rx) = MessageBus::new();
@@ -24,7 +24,7 @@ pub async fn run_interactive(session_id: &str, config: Config) -> Result<()> {
 
     let history_path = dirs::home_dir()
         .unwrap_or_default()
-        .join(".nanobot")
+        .join(".rustoctopus")
         .join("history.txt");
 
     let mut rl = rustyline::DefaultEditor::new()?;

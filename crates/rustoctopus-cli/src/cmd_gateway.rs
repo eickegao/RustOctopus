@@ -1,18 +1,18 @@
 use anyhow::Result;
 use tracing::info;
 
-use nanobot_core::agent::agent_loop::AgentLoop;
-use nanobot_core::bus::queue::MessageBus;
-use nanobot_core::channels::{ChannelManager, FeishuChannel, TelegramChannel};
-use nanobot_core::config::factory::{create_provider, resolve_workspace_path};
-use nanobot_core::config::schema::Config;
-use nanobot_core::cron::CronService;
+use rustoctopus_core::agent::agent_loop::AgentLoop;
+use rustoctopus_core::bus::queue::MessageBus;
+use rustoctopus_core::channels::{ChannelManager, FeishuChannel, TelegramChannel};
+use rustoctopus_core::config::factory::{create_provider, resolve_workspace_path};
+use rustoctopus_core::config::schema::Config;
+use rustoctopus_core::cron::CronService;
 
 /// Start the full gateway server: AgentLoop + ChannelManager + CronService.
 ///
 /// All components run concurrently. Graceful shutdown on Ctrl+C.
 pub async fn run(config: Config) -> Result<()> {
-    info!("Starting nanobot gateway...");
+    info!("Starting RustOctopus gateway...");
 
     // 1. Create bus
     let (bus, inbound_rx, outbound_rx) = MessageBus::new();
@@ -40,7 +40,7 @@ pub async fn run(config: Config) -> Result<()> {
 
     #[cfg(feature = "whatsapp")]
     if config.channels.whatsapp.enabled {
-        let whatsapp = nanobot_core::channels::WhatsAppChannel::new(
+        let whatsapp = rustoctopus_core::channels::WhatsAppChannel::new(
             config.channels.whatsapp.clone(),
             bus.clone(),
         );
@@ -59,7 +59,7 @@ pub async fn run(config: Config) -> Result<()> {
 
     // 7. Show status
     let channel_names = channel_mgr.channel_names();
-    println!("nanobot gateway started");
+    println!("RustOctopus gateway started");
     println!("  Model:    {}", config.agents.defaults.model);
     println!(
         "  Channels: {}",
@@ -94,6 +94,6 @@ pub async fn run(config: Config) -> Result<()> {
     let _ = tokio::time::timeout(std::time::Duration::from_secs(5), agent_handle).await;
     let _ = tokio::time::timeout(std::time::Duration::from_secs(5), dispatch_handle).await;
 
-    println!("nanobot gateway stopped.");
+    println!("RustOctopus gateway stopped.");
     Ok(())
 }

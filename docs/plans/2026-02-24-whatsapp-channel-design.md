@@ -2,7 +2,7 @@
 
 ## Overview
 
-Add WhatsApp as a communication channel to nanobot-core, mirroring the architecture of the original Python nanobot. WhatsApp lacks an open Bot API, so the implementation uses a **Node.js bridge** (based on `@whiskeysockets/baileys`) that speaks WhatsApp Web protocol, with the Rust channel connecting to it via local WebSocket.
+Add WhatsApp as a communication channel to rustoctopus-core, mirroring the architecture of the original Python nanobot. WhatsApp lacks an open Bot API, so the implementation uses a **Node.js bridge** (based on `@whiskeysockets/baileys`) that speaks WhatsApp Web protocol, with the Rust channel connecting to it via local WebSocket.
 
 ## Architecture
 
@@ -60,7 +60,7 @@ Implements the `Channel` trait. Key behaviors:
 ### 4. Feature Gate
 
 ```toml
-# crates/nanobot-core/Cargo.toml
+# crates/rustoctopus-core/Cargo.toml
 [features]
 whatsapp = ["tokio-tungstenite", "futures-util"]  # already available from feishu feature
 ```
@@ -133,9 +133,9 @@ The Rust channel manages the bridge lifecycle:
 | File | Change |
 |------|--------|
 | `bridge/` (new dir) | Copy from original nanobot |
-| `crates/nanobot-core/src/channels/whatsapp.rs` | New: WhatsAppChannel implementation |
-| `crates/nanobot-core/src/channels/mod.rs` | Add whatsapp module + feature gate |
-| `crates/nanobot-core/src/config/schema.rs` | Add WhatsAppConfig, update ChannelsConfig |
-| `crates/nanobot-core/Cargo.toml` | Add `whatsapp` feature |
-| `crates/nanobot-cli/src/cmd_gateway.rs` | Register WhatsApp channel |
-| `crates/nanobot-cli/Cargo.toml` | Add `whatsapp` feature passthrough |
+| `crates/rustoctopus-core/src/channels/whatsapp.rs` | New: WhatsAppChannel implementation |
+| `crates/rustoctopus-core/src/channels/mod.rs` | Add whatsapp module + feature gate |
+| `crates/rustoctopus-core/src/config/schema.rs` | Add WhatsAppConfig, update ChannelsConfig |
+| `crates/rustoctopus-core/Cargo.toml` | Add `whatsapp` feature |
+| `crates/rustoctopus-cli/src/cmd_gateway.rs` | Register WhatsApp channel |
+| `crates/rustoctopus-cli/Cargo.toml` | Add `whatsapp` feature passthrough |

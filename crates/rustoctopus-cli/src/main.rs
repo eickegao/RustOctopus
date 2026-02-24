@@ -8,7 +8,7 @@ mod cmd_onboard;
 mod cmd_status;
 
 #[derive(Parser)]
-#[command(name = "nanobot", about = "nanobot — Personal AI Assistant")]
+#[command(name = "roc", about = "RustOctopus — Personal AI Assistant")]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -30,7 +30,7 @@ enum Commands {
     /// Start the full gateway server (agent + channels + cron)
     Gateway,
 
-    /// Set up nanobot config and workspace
+    /// Set up RustOctopus config and workspace
     Onboard,
 
     /// Show current configuration status
@@ -53,7 +53,7 @@ async fn main() -> anyhow::Result<()> {
 
     match cli.command {
         Commands::Agent { message, session } => {
-            let config = nanobot_core::config::loader::load_config(None)?;
+            let config = rustoctopus_core::config::loader::load_config(None)?;
             if let Some(msg) = message {
                 cmd_agent::run_single(&msg, &session, config).await?;
             } else {
@@ -61,7 +61,7 @@ async fn main() -> anyhow::Result<()> {
             }
         }
         Commands::Gateway => {
-            let config = nanobot_core::config::loader::load_config(None)?;
+            let config = rustoctopus_core::config::loader::load_config(None)?;
             cmd_gateway::run(config).await?;
         }
         Commands::Onboard => {

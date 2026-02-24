@@ -25,7 +25,7 @@ pub struct AgentDefaults {
 impl Default for AgentDefaults {
     fn default() -> Self {
         Self {
-            workspace: "~/.nanobot/workspace".to_string(),
+            workspace: "~/.rustoctopus/workspace".to_string(),
             model: "anthropic/claude-opus-4-5".to_string(),
             max_tokens: 8192,
             temperature: 0.1,
@@ -256,7 +256,7 @@ pub struct ToolsConfig {
 // Config (root)
 // ---------------------------------------------------------------------------
 
-/// Root configuration for nanobot.
+/// Root configuration for RustOctopus.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Config {

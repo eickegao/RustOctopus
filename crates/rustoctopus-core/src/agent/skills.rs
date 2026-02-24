@@ -61,7 +61,7 @@ impl SkillMetadata {
         match serde_json::from_str::<serde_json::Value>(raw) {
             Ok(serde_json::Value::Object(map)) => {
                 // Look for "nanobot" or "openclaw" key first
-                if let Some(serde_json::Value::Object(inner)) = map.get("nanobot").or_else(|| map.get("openclaw")) {
+                if let Some(serde_json::Value::Object(inner)) = map.get("rustoctopus").or_else(|| map.get("nanobot")).or_else(|| map.get("openclaw")) {
                     inner.into_iter().map(|(k, v)| (k.clone(), v.clone())).collect()
                 } else {
                     map.into_iter().collect()

@@ -1,11 +1,11 @@
-# nanobot Rust Port - Design Document
+# RustOctopus Rust Port - Design Document
 
 **Date:** 2026-02-24
 **Status:** Approved
 
 ## Motivation
 
-Port nanobot from Python to Rust for three core goals:
+Port RustOctopus from Python to Rust for three core goals:
 1. **Extreme performance** — minimal latency, memory footprint, fast startup
 2. **Production-grade reliability** — type safety, memory safety, fewer runtime bugs
 3. **Single-binary distribution** — no Python dependency, installable desktop app (macOS/Windows/Linux)
@@ -13,19 +13,19 @@ Port nanobot from Python to Rust for three core goals:
 ## Architecture: Approach B — Core Library + Tauri Shell
 
 Rust workspace with three crates:
-- `nanobot-core` — pure logic library, zero UI dependencies
-- `nanobot-cli` — thin CLI binary using clap
-- `nanobot-app` — Tauri desktop application (React + TypeScript frontend)
+- `rustoctopus-core` — pure logic library, zero UI dependencies
+- `rustoctopus-cli` — thin CLI binary using clap
+- `rustoctopus-app` — Tauri desktop application (React + TypeScript frontend)
 
 The GUI serves as a **full control console** (config, monitoring, chat, cron, memory, skills management), while **core interaction remains through chat channels** (Telegram, Feishu, etc.).
 
 ## Project Structure
 
 ```
-nanobot-rs/
+rustoctopus/
 ├── Cargo.toml                    # Workspace root
 ├── crates/
-│   ├── nanobot-core/
+│   ├── rustoctopus-core/
 │   │   ├── Cargo.toml
 │   │   └── src/
 │   │       ├── lib.rs
@@ -71,12 +71,12 @@ nanobot-rs/
 │   │           ├── schema.rs     # serde config structs
 │   │           └── loader.rs     # JSON load/save
 │   │
-│   ├── nanobot-cli/
+│   ├── rustoctopus-cli/
 │   │   ├── Cargo.toml
 │   │   └── src/
 │   │       └── main.rs           # clap CLI (agent, gateway, status, cron...)
 │   │
-│   └── nanobot-app/              # Tauri GUI (Phase 3)
+│   └── rustoctopus-app/              # Tauri GUI (Phase 3)
 │       ├── Cargo.toml
 │       ├── src-tauri/
 │       │   └── src/
@@ -225,7 +225,7 @@ pub struct Config {
 
 ```
                          ┌─────────────────────────────┐
-                         │        nanobot-core          │
+                         │        rustoctopus-core          │
   Telegram ──┐           │  ┌────────┐    ┌──────────┐  │
   Feishu   ──┼─ inbound ─┼─►│ Agent  │───►│ Provider │──┼──► LLM API
   CLI      ──┘   (mpsc)  │  │  Loop  │◄───│ (reqwest)│◄─┼───  Response
@@ -335,13 +335,13 @@ Real-time updates via Tauri event system (`app.emit("agent-message", ...)`)
 - config (serde), bus (tokio::mpsc), providers (registry + openai_compat)
 - tools (registry, filesystem, shell, web, message, spawn, cron)
 - agent (context, loop, memory, subagent), session, cron
-- **Deliverable:** `nanobot-core` lib + unit tests
+- **Deliverable:** `rustoctopus-core` lib + unit tests
 
 ### Phase 2: Channels + CLI
 - Telegram channel, Feishu channel
 - CLI interactive mode + gateway mode
 - ChannelManager, integration tests
-- **Deliverable:** `nanobot-cli` binary, feature-equivalent to Python `nanobot agent` / `nanobot gateway`
+- **Deliverable:** `rustoctopus-cli` binary, feature-equivalent to Python `rustoctopus agent` / `rustoctopus gateway`
 
 ### Phase 3: Tauri GUI
 - Tauri project scaffold, IPC commands

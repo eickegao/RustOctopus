@@ -6,10 +6,10 @@ use anyhow::{Context, Result};
 
 use super::schema::Config;
 
-/// Returns the default config file path: `~/.nanobot/config.json`.
+/// Returns the default config file path: `~/.rustoctopus/config.json`.
 pub fn default_config_path() -> PathBuf {
     let home = dirs::home_dir().unwrap_or_else(|| PathBuf::from("."));
-    home.join(".nanobot").join("config.json")
+    home.join(".rustoctopus").join("config.json")
 }
 
 /// Loads configuration from a JSON file.

@@ -210,7 +210,7 @@ impl Tool for WebFetchTool {
         let max_chars = params["max_chars"].as_u64().unwrap_or(12000) as usize;
 
         let client = reqwest::Client::builder()
-            .user_agent("nanobot/0.1")
+            .user_agent("rustoctopus/0.1")
             .redirect(reqwest::redirect::Policy::limited(5))
             .timeout(std::time::Duration::from_secs(30))
             .build()

@@ -1,9 +1,9 @@
 use anyhow::{bail, Result};
 use clap::Subcommand;
 
-use nanobot_core::config::factory::resolve_workspace_path;
-use nanobot_core::config::loader::load_config;
-use nanobot_core::cron::{CronSchedule, CronService};
+use rustoctopus_core::config::factory::resolve_workspace_path;
+use rustoctopus_core::config::loader::load_config;
+use rustoctopus_core::cron::{CronSchedule, CronService};
 
 #[derive(Subcommand)]
 pub enum CronAction {

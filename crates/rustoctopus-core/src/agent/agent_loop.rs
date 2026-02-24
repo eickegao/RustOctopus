@@ -419,7 +419,7 @@ impl AgentLoop {
         };
 
         format!(
-            "nanobot help\n\n\
+            "RustOctopus help\n\n\
              Commands:\n\
              /new   - Start a new session\n\
              /help  - Show this help\n\n\
@@ -523,7 +523,7 @@ mod tests {
 
         let mut agent = AgentLoop::new(bus, provider, dir.path().to_path_buf(), inbound_rx);
         let result = agent.process_direct("/help", "test:chat").await.unwrap();
-        assert!(result.contains("nanobot help"));
+        assert!(result.contains("RustOctopus help"));
         assert!(result.contains("/new"));
     }
 

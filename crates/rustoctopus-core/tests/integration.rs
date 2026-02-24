@@ -3,9 +3,9 @@
 //! Uses an `EchoProvider` mock that echoes the last user message back,
 //! exercising the public API end-to-end without making real LLM calls.
 
-use nanobot_core::agent::AgentLoop;
-use nanobot_core::bus::queue::MessageBus;
-use nanobot_core::providers::traits::*;
+use rustoctopus_core::agent::AgentLoop;
+use rustoctopus_core::bus::queue::MessageBus;
+use rustoctopus_core::providers::traits::*;
 use tempfile::TempDir;
 
 // ---------------------------------------------------------------------------
@@ -184,8 +184,8 @@ async fn test_slash_help_returns_help_text() {
     let result = agent.process_direct("/help", "test:chat").await.unwrap();
 
     assert!(
-        result.contains("nanobot help"),
-        "Help text should contain 'nanobot help', got: {}",
+        result.contains("RustOctopus help"),
+        "Help text should contain 'RustOctopus help', got: {}",
         result,
     );
     assert!(
@@ -326,7 +326,7 @@ async fn test_bus_receives_outbound_via_run() {
     });
 
     // Publish an inbound message via the bus
-    let inbound = nanobot_core::bus::events::InboundMessage::new(
+    let inbound = rustoctopus_core::bus::events::InboundMessage::new(
         "test", "user", "chat1", "ping via bus",
     );
     bus_clone.publish_inbound(inbound).await;

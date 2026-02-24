@@ -1,7 +1,7 @@
 use anyhow::Result;
 
-use nanobot_core::config::factory::resolve_workspace_path;
-use nanobot_core::config::loader::{default_config_path, load_config};
+use rustoctopus_core::config::factory::resolve_workspace_path;
+use rustoctopus_core::config::loader::{default_config_path, load_config};
 
 pub fn run() -> Result<()> {
     let config_path = default_config_path();
@@ -9,8 +9,8 @@ pub fn run() -> Result<()> {
 
     let workspace = resolve_workspace_path(&config.agents.defaults.workspace);
 
-    println!("nanobot status");
-    println!("==============");
+    println!("RustOctopus status");
+    println!("================");
 
     // Config
     println!(

@@ -1,10 +1,10 @@
-# Nanobot Rust Port — Phase 2 Implementation Plan
+# RustOctopus Rust Port — Phase 2 Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Build a runnable `nanobot-cli` binary with CLI commands (agent, gateway, onboard, status, cron) and Telegram/Feishu channel support, enabling end-to-end testing of the Rust port.
+**Goal:** Build a runnable `rustoctopus-cli` binary with CLI commands (agent, gateway, onboard, status, cron) and Telegram/Feishu channel support, enabling end-to-end testing of the Rust port.
 
-**Architecture:** New `crates/nanobot-cli` binary crate using `clap` for CLI, depending on `nanobot-core`. Add `channels` module to `nanobot-core` with Channel trait, ChannelManager, and Telegram/Feishu implementations. Add config helpers (workspace path resolution, provider factory) to bridge config → runtime objects.
+**Architecture:** New `crates/rustoctopus-cli` binary crate using `clap` for CLI, depending on `rustoctopus-core`. Add `channels` module to `rustoctopus-core` with Channel trait, ChannelManager, and Telegram/Feishu implementations. Add config helpers (workspace path resolution, provider factory) to bridge config → runtime objects.
 
 **Tech Stack:** clap (CLI), teloxide (Telegram), reqwest + tokio-tungstenite (Feishu), rustyline (interactive input), crossterm (terminal), tokio (async runtime)
 
@@ -13,12 +13,12 @@
 ### Task 1: Config Helpers — Workspace Resolution + Provider Factory
 
 **Files:**
-- Modify: `crates/nanobot-core/src/config/loader.rs`
-- Modify: `crates/nanobot-core/src/config/mod.rs`
-- Create: `crates/nanobot-core/src/config/factory.rs`
-- Test: `crates/nanobot-core/src/config/factory.rs` (inline tests)
+- Modify: `crates/rustoctopus-core/src/config/loader.rs`
+- Modify: `crates/rustoctopus-core/src/config/mod.rs`
+- Create: `crates/rustoctopus-core/src/config/factory.rs`
+- Test: `crates/rustoctopus-core/src/config/factory.rs` (inline tests)
 
-**Context:** `AgentDefaults.workspace` stores `"~/.nanobot/workspace"` as a raw string. We need tilde expansion. We also need a factory to create an `OpenAiCompatClient` from config (model string → ProviderSpec → client).
+**Context:** `AgentDefaults.workspace` stores `"~/.rustoctopus/workspace"` as a raw string. We need tilde expansion. We also need a factory to create an `OpenAiCompatClient` from config (model string → ProviderSpec → client).
 
 **Step 1: Write failing tests for `resolve_workspace_path` and `create_provider_from_config`**
 
@@ -31,9 +31,9 @@ mod tests {
 
     #[test]
     fn test_resolve_workspace_expands_tilde() {
-        let path = resolve_workspace_path("~/.nanobot/workspace");
+        let path = resolve_workspace_path("~/.rustoctopus/workspace");
         assert!(!path.to_string_lossy().contains('~'));
-        assert!(path.to_string_lossy().contains("nanobot"));
+        assert!(path.to_string_lossy().contains("rustoctopus"));
     }
 
     #[test]
@@ -63,7 +63,7 @@ mod tests {
 
 **Step 2: Run tests to verify they fail**
 
-Run: `cargo test -p nanobot-core --lib config::factory`
+Run: `cargo test -p rustoctopus-core --lib config::factory`
 Expected: FAIL — module doesn't exist
 
 **Step 3: Implement `factory.rs`**
@@ -135,13 +135,13 @@ fn get_provider_config<'a>(config: &'a Config, provider_name: &str) -> &'a crate
 
 **Step 5: Run tests to verify they pass**
 
-Run: `cargo test -p nanobot-core --lib config::factory`
+Run: `cargo test -p rustoctopus-core --lib config::factory`
 Expected: PASS
 
 **Step 6: Commit**
 
 ```bash
-git add crates/nanobot-core/src/config/factory.rs crates/nanobot-core/src/config/mod.rs
+git add crates/rustoctopus-core/src/config/factory.rs crates/rustoctopus-core/src/config/mod.rs
 git commit -m "feat: add config factory (workspace path resolution + provider creation)"
 ```
 
@@ -150,7 +150,7 @@ git commit -m "feat: add config factory (workspace path resolution + provider cr
 ### Task 2: AgentLoop Config-Driven Constructor
 
 **Files:**
-- Modify: `crates/nanobot-core/src/agent/agent_loop.rs`
+- Modify: `crates/rustoctopus-core/src/agent/agent_loop.rs`
 
 **Context:** Current `AgentLoop::new()` takes raw parts and hardcodes defaults (max_iterations=40, temperature=0.1, etc). Add `AgentLoop::from_config()` that reads from `Config` and applies settings.
 
@@ -181,7 +181,7 @@ Note: `max_iterations` is currently private. We need to either make it `pub(crat
 
 **Step 2: Run test to verify it fails**
 
-Run: `cargo test -p nanobot-core --lib agent::agent_loop::tests::test_from_config`
+Run: `cargo test -p rustoctopus-core --lib agent::agent_loop::tests::test_from_config`
 Expected: FAIL — `from_config` doesn't exist
 
 **Step 3: Implement `from_config`**
@@ -210,25 +210,25 @@ impl AgentLoop {
 
 **Step 4: Run tests**
 
-Run: `cargo test -p nanobot-core --lib agent::agent_loop`
+Run: `cargo test -p rustoctopus-core --lib agent::agent_loop`
 Expected: PASS (all existing + new test)
 
 **Step 5: Commit**
 
 ```bash
-git add crates/nanobot-core/src/agent/agent_loop.rs
+git add crates/rustoctopus-core/src/agent/agent_loop.rs
 git commit -m "feat: add AgentLoop::from_config() config-driven constructor"
 ```
 
 ---
 
-### Task 3: Channel Trait + ChannelManager in nanobot-core
+### Task 3: Channel Trait + ChannelManager in rustoctopus-core
 
 **Files:**
-- Create: `crates/nanobot-core/src/channels/mod.rs`
-- Create: `crates/nanobot-core/src/channels/traits.rs`
-- Create: `crates/nanobot-core/src/channels/manager.rs`
-- Modify: `crates/nanobot-core/src/lib.rs` — add `pub mod channels;`
+- Create: `crates/rustoctopus-core/src/channels/mod.rs`
+- Create: `crates/rustoctopus-core/src/channels/traits.rs`
+- Create: `crates/rustoctopus-core/src/channels/manager.rs`
+- Modify: `crates/rustoctopus-core/src/lib.rs` — add `pub mod channels;`
 
 **Context:** Port the Python `BaseChannel` ABC → Rust `Channel` async trait, and `ChannelManager` → Rust struct. The manager consumes `outbound_rx` and dispatches to channels. Channels publish inbound messages to the bus.
 
@@ -332,17 +332,17 @@ impl ChannelManager {
 **Step 6: Commit**
 
 ```bash
-git add crates/nanobot-core/src/channels/ crates/nanobot-core/src/lib.rs
+git add crates/rustoctopus-core/src/channels/ crates/rustoctopus-core/src/lib.rs
 git commit -m "feat: add Channel trait and ChannelManager"
 ```
 
 ---
 
-### Task 4: nanobot-cli Crate Scaffolding
+### Task 4: rustoctopus-cli Crate Scaffolding
 
 **Files:**
-- Create: `crates/nanobot-cli/Cargo.toml`
-- Create: `crates/nanobot-cli/src/main.rs`
+- Create: `crates/rustoctopus-cli/Cargo.toml`
+- Create: `crates/rustoctopus-cli/src/main.rs`
 - Modify: `Cargo.toml` (workspace members)
 
 **Context:** Binary crate with clap CLI. Subcommands: agent, gateway, onboard, status, cron.
@@ -351,16 +351,16 @@ git commit -m "feat: add Channel trait and ChannelManager"
 
 ```toml
 [package]
-name = "nanobot-cli"
+name = "rustoctopus-cli"
 version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "nanobot"
+name = "rustoctopus"
 path = "src/main.rs"
 
 [dependencies]
-nanobot-core = { path = "../nanobot-core" }
+rustoctopus-core = { path = "../rustoctopus-core" }
 tokio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -377,7 +377,7 @@ dirs = { workspace = true }
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
-#[command(name = "nanobot", about = "nanobot - Personal AI Assistant")]
+#[command(name = "rustoctopus", about = "RustOctopus - Personal AI Assistant")]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -400,13 +400,13 @@ async fn main() -> anyhow::Result<()> {
 }
 ```
 
-**Step 3: Add workspace member, verify `cargo build -p nanobot-cli` compiles**
+**Step 3: Add workspace member, verify `cargo build -p rustoctopus-cli` compiles**
 
 **Step 4: Commit**
 
 ```bash
-git add crates/nanobot-cli/ Cargo.toml
-git commit -m "feat: scaffold nanobot-cli crate with clap subcommands"
+git add crates/rustoctopus-cli/ Cargo.toml
+git commit -m "feat: scaffold rustoctopus-cli crate with clap subcommands"
 ```
 
 ---
@@ -414,10 +414,10 @@ git commit -m "feat: scaffold nanobot-cli crate with clap subcommands"
 ### Task 5: CLI Agent Command — Single Message Mode
 
 **Files:**
-- Create: `crates/nanobot-cli/src/cmd_agent.rs`
-- Modify: `crates/nanobot-cli/src/main.rs`
+- Create: `crates/rustoctopus-cli/src/cmd_agent.rs`
+- Modify: `crates/rustoctopus-cli/src/main.rs`
 
-**Context:** `nanobot agent -m "hello"` loads config, creates provider + bus + AgentLoop, calls `process_direct()`, prints result, exits.
+**Context:** `rustoctopus agent -m "hello"` loads config, creates provider + bus + AgentLoop, calls `process_direct()`, prints result, exits.
 
 **Step 1: Implement `cmd_agent::run_single()`**
 
@@ -445,12 +445,12 @@ Commands::Agent { message, session } => {
 }
 ```
 
-**Step 3: Verify `cargo build -p nanobot-cli` compiles**
+**Step 3: Verify `cargo build -p rustoctopus-cli` compiles**
 
 **Step 4: Commit**
 
 ```bash
-git add crates/nanobot-cli/src/
+git add crates/rustoctopus-cli/src/
 git commit -m "feat: implement CLI agent command (single message mode)"
 ```
 
@@ -459,10 +459,10 @@ git commit -m "feat: implement CLI agent command (single message mode)"
 ### Task 6: CLI Agent Command — Interactive Mode
 
 **Files:**
-- Modify: `crates/nanobot-cli/src/cmd_agent.rs`
-- Modify: `crates/nanobot-cli/Cargo.toml` — add `rustyline` dep
+- Modify: `crates/rustoctopus-cli/src/cmd_agent.rs`
+- Modify: `crates/rustoctopus-cli/Cargo.toml` — add `rustyline` dep
 
-**Context:** `nanobot agent` (no -m) enters a REPL. User types messages, gets responses. Handles exit commands. Uses rustyline for readline support (history, editing).
+**Context:** `rustoctopus agent` (no -m) enters a REPL. User types messages, gets responses. Handles exit commands. Uses rustyline for readline support (history, editing).
 
 **Step 1: Add rustyline dependency**
 
@@ -476,7 +476,7 @@ Use Approach A for simplicity (Python's interactive mode also supports direct mo
 
 ```rust
 pub async fn run_interactive(session_id: &str, config: Config) -> Result<()> {
-    println!("nanobot interactive mode. Type 'exit' to quit.\n");
+    println!("RustOctopus interactive mode. Type 'exit' to quit.\n");
     let provider = create_provider(&config)?;
     let (bus, inbound_rx, _outbound_rx) = MessageBus::new();
     let mut agent = AgentLoop::from_config(config, bus, provider, inbound_rx);
@@ -501,12 +501,12 @@ pub async fn run_interactive(session_id: &str, config: Config) -> Result<()> {
 }
 ```
 
-**Step 3: Verify with `cargo build -p nanobot-cli`**
+**Step 3: Verify with `cargo build -p rustoctopus-cli`**
 
 **Step 4: Commit**
 
 ```bash
-git add crates/nanobot-cli/
+git add crates/rustoctopus-cli/
 git commit -m "feat: implement CLI agent interactive mode with rustyline"
 ```
 
@@ -515,20 +515,20 @@ git commit -m "feat: implement CLI agent interactive mode with rustyline"
 ### Task 7: CLI Onboard + Status Commands
 
 **Files:**
-- Create: `crates/nanobot-cli/src/cmd_onboard.rs`
-- Create: `crates/nanobot-cli/src/cmd_status.rs`
-- Modify: `crates/nanobot-cli/src/main.rs`
+- Create: `crates/rustoctopus-cli/src/cmd_onboard.rs`
+- Create: `crates/rustoctopus-cli/src/cmd_status.rs`
+- Modify: `crates/rustoctopus-cli/src/main.rs`
 
-**Context:** `onboard` creates `~/.nanobot/config.json` and workspace directory with template files (AGENTS.md, SOUL.md, etc.). `status` shows config location, model, workspace path, provider API key status.
+**Context:** `onboard` creates `~/.rustoctopus/config.json` and workspace directory with template files (AGENTS.md, SOUL.md, etc.). `status` shows config location, model, workspace path, provider API key status.
 
 **Step 1: Implement `cmd_onboard::run()`**
 
 Creates:
-- `~/.nanobot/config.json` (default config if missing)
-- `~/.nanobot/workspace/` directory
-- `~/.nanobot/workspace/AGENTS.md`, `SOUL.md`, `USER.md`, `TOOLS.md`, `IDENTITY.md` (template stubs)
-- `~/.nanobot/workspace/skills/` directory
-- `~/.nanobot/workspace/sessions/` directory
+- `~/.rustoctopus/config.json` (default config if missing)
+- `~/.rustoctopus/workspace/` directory
+- `~/.rustoctopus/workspace/AGENTS.md`, `SOUL.md`, `USER.md`, `TOOLS.md`, `IDENTITY.md` (template stubs)
+- `~/.rustoctopus/workspace/skills/` directory
+- `~/.rustoctopus/workspace/sessions/` directory
 
 **Step 2: Implement `cmd_status::run()`**
 
@@ -544,7 +544,7 @@ Reads config and prints:
 **Step 4: Commit**
 
 ```bash
-git add crates/nanobot-cli/src/
+git add crates/rustoctopus-cli/src/
 git commit -m "feat: implement onboard and status CLI commands"
 ```
 
@@ -553,10 +553,10 @@ git commit -m "feat: implement onboard and status CLI commands"
 ### Task 8: CLI Cron Subcommands
 
 **Files:**
-- Create: `crates/nanobot-cli/src/cmd_cron.rs`
-- Modify: `crates/nanobot-cli/src/main.rs`
+- Create: `crates/rustoctopus-cli/src/cmd_cron.rs`
+- Modify: `crates/rustoctopus-cli/src/main.rs`
 
-**Context:** `nanobot cron list|add|remove|enable|disable|run` — matches Python cron commands. Uses CronService from nanobot-core.
+**Context:** `rustoctopus cron list|add|remove|enable|disable|run` — matches Python cron commands. Uses CronService from rustoctopus-core.
 
 **Step 1: Define CronAction subcommand enum**
 
@@ -581,7 +581,7 @@ Each subcommand creates a CronService with a file-backed store, performs the ope
 **Step 4: Commit**
 
 ```bash
-git add crates/nanobot-cli/src/
+git add crates/rustoctopus-cli/src/
 git commit -m "feat: implement cron CLI subcommands"
 ```
 
@@ -590,9 +590,9 @@ git commit -m "feat: implement cron CLI subcommands"
 ### Task 9: Telegram Channel Implementation
 
 **Files:**
-- Create: `crates/nanobot-core/src/channels/telegram.rs`
-- Modify: `crates/nanobot-core/src/channels/mod.rs`
-- Modify: `crates/nanobot-core/Cargo.toml` — add `teloxide` dep
+- Create: `crates/rustoctopus-core/src/channels/telegram.rs`
+- Modify: `crates/rustoctopus-core/src/channels/mod.rs`
+- Modify: `crates/rustoctopus-core/Cargo.toml` — add `teloxide` dep
 
 **Context:** Port Python TelegramChannel. Uses `teloxide` crate for Telegram Bot API with long polling. Handles text messages, sends responses with markdown. ACL via `allow_from` config.
 
@@ -648,7 +648,7 @@ Key features to port:
 **Step 4: Commit**
 
 ```bash
-git add crates/nanobot-core/src/channels/telegram.rs crates/nanobot-core/src/channels/mod.rs crates/nanobot-core/Cargo.toml
+git add crates/rustoctopus-core/src/channels/telegram.rs crates/rustoctopus-core/src/channels/mod.rs crates/rustoctopus-core/Cargo.toml
 git commit -m "feat: implement Telegram channel with teloxide"
 ```
 
@@ -657,9 +657,9 @@ git commit -m "feat: implement Telegram channel with teloxide"
 ### Task 10: Feishu Channel Implementation
 
 **Files:**
-- Create: `crates/nanobot-core/src/channels/feishu.rs`
-- Modify: `crates/nanobot-core/src/channels/mod.rs`
-- Modify: `crates/nanobot-core/Cargo.toml` — add `tokio-tungstenite`, `url` deps
+- Create: `crates/rustoctopus-core/src/channels/feishu.rs`
+- Modify: `crates/rustoctopus-core/src/channels/mod.rs`
+- Modify: `crates/rustoctopus-core/Cargo.toml` — add `tokio-tungstenite`, `url` deps
 
 **Context:** Port Python FeishuChannel. No Rust Feishu SDK exists — implement using reqwest (REST API for sending) + tokio-tungstenite (WebSocket for receiving). Key differences from Python: all async-native (no thread bridging needed).
 
@@ -693,7 +693,7 @@ pub struct FeishuChannel {
 **Step 4: Commit**
 
 ```bash
-git add crates/nanobot-core/src/channels/feishu.rs crates/nanobot-core/Cargo.toml
+git add crates/rustoctopus-core/src/channels/feishu.rs crates/rustoctopus-core/Cargo.toml
 git commit -m "feat: implement Feishu channel with WebSocket + REST API"
 ```
 
@@ -702,10 +702,10 @@ git commit -m "feat: implement Feishu channel with WebSocket + REST API"
 ### Task 11: CLI Gateway Command — Full Server Mode
 
 **Files:**
-- Create: `crates/nanobot-cli/src/cmd_gateway.rs`
-- Modify: `crates/nanobot-cli/src/main.rs`
+- Create: `crates/rustoctopus-cli/src/cmd_gateway.rs`
+- Modify: `crates/rustoctopus-cli/src/main.rs`
 
-**Context:** `nanobot gateway` starts the full server: MessageBus + AgentLoop + ChannelManager + CronService, all running concurrently. Graceful shutdown on Ctrl+C.
+**Context:** `rustoctopus gateway` starts the full server: MessageBus + AgentLoop + ChannelManager + CronService, all running concurrently. Graceful shutdown on Ctrl+C.
 
 **Step 1: Implement `cmd_gateway::run()`**
 
@@ -755,7 +755,7 @@ pub async fn run(config: Config) -> Result<()> {
 **Step 4: Commit**
 
 ```bash
-git add crates/nanobot-cli/src/
+git add crates/rustoctopus-cli/src/
 git commit -m "feat: implement gateway command (full server mode)"
 ```
 
@@ -764,8 +764,8 @@ git commit -m "feat: implement gateway command (full server mode)"
 ### Task 12: Integration Tests
 
 **Files:**
-- Create: `crates/nanobot-cli/tests/cli_integration.rs`
-- Modify: `crates/nanobot-core/tests/integration.rs` — add channel tests
+- Create: `crates/rustoctopus-cli/tests/cli_integration.rs`
+- Modify: `crates/rustoctopus-core/tests/integration.rs` — add channel tests
 
 **Context:** Test the full pipeline: config → provider → agent → response. Test channel manager dispatch. Test CLI argument parsing.
 
@@ -820,13 +820,13 @@ Expected: All pass (Phase 1 + Phase 2 tests)
 
 **Step 3: Verify binary runs**
 
-Run: `cargo run -p nanobot-cli -- --help`
+Run: `cargo run -p rustoctopus-cli -- --help`
 Expected: Shows help with all subcommands
 
-Run: `cargo run -p nanobot-cli -- onboard`
-Expected: Creates ~/.nanobot/ structure
+Run: `cargo run -p rustoctopus-cli -- onboard`
+Expected: Creates ~/.rustoctopus/ structure
 
-Run: `cargo run -p nanobot-cli -- status`
+Run: `cargo run -p rustoctopus-cli -- status`
 Expected: Shows config status
 
 **Step 4: Commit**
@@ -842,12 +842,12 @@ git commit -m "chore: Phase 2 cleanup — clippy fixes and final polish"
 
 1. **Unit tests**: `cargo test --workspace` — all tests pass
 2. **Clippy**: `cargo clippy --workspace -- -D warnings` — no warnings
-3. **Build**: `cargo build --release -p nanobot-cli` — compiles
-4. **Onboard**: `cargo run -p nanobot-cli -- onboard` — creates ~/.nanobot/
-5. **Status**: `cargo run -p nanobot-cli -- status` — shows config
-6. **Agent single**: `cargo run -p nanobot-cli -- agent -m "hello"` — gets LLM response (requires API key)
-7. **Agent interactive**: `cargo run -p nanobot-cli -- agent` — enters REPL
-8. **Gateway**: `cargo run -p nanobot-cli -- gateway` — starts with Telegram (requires token)
+3. **Build**: `cargo build --release -p rustoctopus-cli` — compiles
+4. **Onboard**: `cargo run -p rustoctopus-cli -- onboard` — creates ~/.rustoctopus/
+5. **Status**: `cargo run -p rustoctopus-cli -- status` — shows config
+6. **Agent single**: `cargo run -p rustoctopus-cli -- agent -m "hello"` — gets LLM response (requires API key)
+7. **Agent interactive**: `cargo run -p rustoctopus-cli -- agent` — enters REPL
+8. **Gateway**: `cargo run -p rustoctopus-cli -- gateway` — starts with Telegram (requires token)
 
 ## New Dependencies Summary
 

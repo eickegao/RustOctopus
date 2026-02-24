@@ -446,7 +446,7 @@ fn start_bridge_process(port: u16, config: &WhatsAppConfig) -> Result<Child> {
 
     let auth_dir = dirs::home_dir()
         .unwrap_or_default()
-        .join(".nanobot")
+        .join(".rustoctopus")
         .join("whatsapp-auth");
     cmd.env("AUTH_DIR", auth_dir.to_string_lossy().to_string());
 

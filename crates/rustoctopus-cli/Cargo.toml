@@ -1,14 +1,14 @@
 [package]
-name = "nanobot-cli"
+name = "rustoctopus-cli"
 version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "nanobot"
+name = "roc"
 path = "src/main.rs"
 
 [dependencies]
-nanobot-core = { path = "../nanobot-core" }
+rustoctopus-core = { path = "../rustoctopus-core" }
 tokio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -21,7 +21,7 @@ rustyline = "15"
 
 [features]
 default = ["whatsapp"]
-whatsapp = ["nanobot-core/whatsapp"]
+whatsapp = ["rustoctopus-core/whatsapp"]
 
 [dev-dependencies]
 tempfile = "3"

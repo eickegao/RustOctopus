@@ -199,8 +199,8 @@ impl ContextBuilder {
         let runtime = format!("{} {}, Rust", os_display, arch);
 
         format!(
-            "# nanobot\n\n\
-             You are nanobot, a helpful AI assistant.\n\n\
+            "# RustOctopus\n\n\
+             You are RustOctopus, a helpful AI assistant.\n\n\
              ## Current Time\n\
              {} ({})\n\n\
              ## Runtime\n\
@@ -281,7 +281,7 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let ctx = ContextBuilder::new(dir.path().to_path_buf());
         let prompt = ctx.build_system_prompt();
-        assert!(prompt.contains("nanobot"));
+        assert!(prompt.contains("RustOctopus"));
         assert!(prompt.contains("Workspace"));
     }
 

@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Add a WhatsApp communication channel to nanobot, using a Node.js bridge (baileys) managed as a child process, with the Rust channel connecting via local WebSocket.
+**Goal:** Add a WhatsApp communication channel to RustOctopus, using a Node.js bridge (baileys) managed as a child process, with the Rust channel connecting via local WebSocket.
 
 **Architecture:** Rust `WhatsAppChannel` implements the `Channel` trait and connects to a local Node.js bridge process over WebSocket (`ws://127.0.0.1:3001`). The bridge uses `@whiskeysockets/baileys` to speak WhatsApp Web protocol. The Rust channel auto-spawns the bridge as a child process and handles reconnection.
 
@@ -53,11 +53,11 @@ git commit -m "feat: add Node.js WhatsApp bridge from upstream nanobot"
 ### Task 2: Add WhatsAppConfig to config schema
 
 **Files:**
-- Modify: `crates/nanobot-core/src/config/schema.rs`
+- Modify: `crates/rustoctopus-core/src/config/schema.rs`
 
 **Step 1: Write failing test**
 
-Add to `crates/nanobot-core/src/config/schema.rs` (or a new test file) — test that WhatsAppConfig deserializes from JSON with camelCase keys:
+Add to `crates/rustoctopus-core/src/config/schema.rs` (or a new test file) — test that WhatsAppConfig deserializes from JSON with camelCase keys:
 
 ```rust
 #[cfg(test)]
@@ -102,12 +102,12 @@ mod tests {
 
 **Step 2: Run test to verify it fails**
 
-Run: `cargo test -p nanobot-core --lib config::schema::tests::test_whatsapp_config_defaults`
+Run: `cargo test -p rustoctopus-core --lib config::schema::tests::test_whatsapp_config_defaults`
 Expected: FAIL — `WhatsAppConfig` does not exist yet.
 
 **Step 3: Implement WhatsAppConfig**
 
-Add to `crates/nanobot-core/src/config/schema.rs`, after `FeishuConfig`:
+Add to `crates/rustoctopus-core/src/config/schema.rs`, after `FeishuConfig`:
 
 ```rust
 // ---------------------------------------------------------------------------
@@ -168,7 +168,7 @@ impl Default for ChannelsConfig {
 
 **Step 4: Run tests to verify they pass**
 
-Run: `cargo test -p nanobot-core --lib config::schema`
+Run: `cargo test -p rustoctopus-core --lib config::schema`
 Expected: All PASS.
 
 **Step 5: Commit**
@@ -182,10 +182,10 @@ git commit -am "feat: add WhatsAppConfig to config schema"
 ### Task 3: Add whatsapp feature to Cargo.toml
 
 **Files:**
-- Modify: `crates/nanobot-core/Cargo.toml`
-- Modify: `crates/nanobot-cli/Cargo.toml`
+- Modify: `crates/rustoctopus-core/Cargo.toml`
+- Modify: `crates/rustoctopus-cli/Cargo.toml`
 
-**Step 1: Update nanobot-core Cargo.toml**
+**Step 1: Update rustoctopus-core Cargo.toml**
 
 Add `whatsapp` to the features section. It reuses the same deps as `feishu` (tokio-tungstenite, futures-util) plus needs `tokio/process` for child process management:
 
@@ -197,18 +197,18 @@ feishu = ["dep:tokio-tungstenite", "dep:url", "dep:futures-util"]
 whatsapp = ["dep:tokio-tungstenite", "dep:url", "dep:futures-util"]
 ```
 
-**Step 2: Update nanobot-cli Cargo.toml**
+**Step 2: Update rustoctopus-cli Cargo.toml**
 
 Add whatsapp feature passthrough:
 
 ```toml
 [dependencies]
-nanobot-core = { path = "../nanobot-core", features = ["telegram", "feishu", "whatsapp"] }
+rustoctopus-core = { path = "../rustoctopus-core", features = ["telegram", "feishu", "whatsapp"] }
 ```
 
 **Step 3: Verify it compiles**
 
-Run: `cargo check -p nanobot-core --features whatsapp`
+Run: `cargo check -p rustoctopus-core --features whatsapp`
 Expected: Compiles without error.
 
 **Step 4: Commit**
@@ -222,12 +222,12 @@ git commit -am "feat: add whatsapp feature flag to Cargo.toml"
 ### Task 4: Implement WhatsAppChannel — core struct and Channel trait
 
 **Files:**
-- Create: `crates/nanobot-core/src/channels/whatsapp.rs`
-- Modify: `crates/nanobot-core/src/channels/mod.rs`
+- Create: `crates/rustoctopus-core/src/channels/whatsapp.rs`
+- Modify: `crates/rustoctopus-core/src/channels/mod.rs`
 
 **Step 1: Write failing test — channel creation and name**
 
-Create `crates/nanobot-core/src/channels/whatsapp.rs` with tests at the bottom:
+Create `crates/rustoctopus-core/src/channels/whatsapp.rs` with tests at the bottom:
 
 ```rust
 #[cfg(test)]
@@ -266,12 +266,12 @@ mod tests {
 
 **Step 2: Run test to verify it fails**
 
-Run: `cargo test -p nanobot-core --features whatsapp --lib channels::whatsapp`
+Run: `cargo test -p rustoctopus-core --features whatsapp --lib channels::whatsapp`
 Expected: FAIL — module does not exist.
 
 **Step 3: Implement WhatsAppChannel**
 
-Write the full `crates/nanobot-core/src/channels/whatsapp.rs`:
+Write the full `crates/rustoctopus-core/src/channels/whatsapp.rs`:
 
 ```rust
 use std::path::PathBuf;
@@ -416,7 +416,7 @@ impl WhatsAppChannel {
 
         let auth_dir = dirs::home_dir()
             .unwrap_or_default()
-            .join(".nanobot")
+            .join(".rustoctopus")
             .join("whatsapp-auth");
         cmd.env("AUTH_DIR", auth_dir.to_string_lossy().to_string());
 
@@ -788,7 +788,7 @@ mod tests {
 
 **Step 4: Register module in mod.rs**
 
-Update `crates/nanobot-core/src/channels/mod.rs`:
+Update `crates/rustoctopus-core/src/channels/mod.rs`:
 
 ```rust
 pub mod manager;
@@ -818,7 +818,7 @@ pub use whatsapp::WhatsAppChannel;
 
 **Step 5: Run tests to verify they pass**
 
-Run: `cargo test -p nanobot-core --features whatsapp --lib channels::whatsapp`
+Run: `cargo test -p rustoctopus-core --features whatsapp --lib channels::whatsapp`
 Expected: All PASS.
 
 **Step 6: Commit**
@@ -832,8 +832,8 @@ git commit -am "feat: implement WhatsAppChannel with bridge protocol"
 ### Task 5: Integrate into Gateway
 
 **Files:**
-- Modify: `crates/nanobot-cli/src/cmd_gateway.rs`
-- Modify: `crates/nanobot-cli/src/cmd_status.rs`
+- Modify: `crates/rustoctopus-cli/src/cmd_gateway.rs`
+- Modify: `crates/rustoctopus-cli/src/cmd_status.rs`
 
 **Step 1: Update cmd_gateway.rs to register WhatsApp channel**
 
@@ -842,7 +842,7 @@ Add after the Feishu channel registration block:
 ```rust
 #[cfg(feature = "whatsapp")]
 if config.channels.whatsapp.enabled {
-    let whatsapp = nanobot_core::channels::WhatsAppChannel::new(
+    let whatsapp = rustoctopus_core::channels::WhatsAppChannel::new(
         config.channels.whatsapp.clone(),
         bus.clone(),
     );
@@ -866,7 +866,7 @@ println!(
 
 **Step 3: Verify it compiles**
 
-Run: `cargo build -p nanobot-cli`
+Run: `cargo build -p rustoctopus-cli`
 Expected: Compiles without error.
 
 **Step 4: Commit**
@@ -891,10 +891,10 @@ Expected: No warnings.
 
 **Step 3: Verify feature-gated builds**
 
-Run: `cargo check -p nanobot-core --no-default-features`
+Run: `cargo check -p rustoctopus-core --no-default-features`
 Expected: Compiles (whatsapp module excluded).
 
-Run: `cargo check -p nanobot-core --features whatsapp`
+Run: `cargo check -p rustoctopus-core --features whatsapp`
 Expected: Compiles (whatsapp module included).
 
 **Step 4: Final commit if any cleanup needed**

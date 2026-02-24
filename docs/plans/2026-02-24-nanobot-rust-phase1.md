@@ -1,10 +1,10 @@
-# nanobot Rust Port — Phase 1: Core Engine
+# RustOctopus Rust Port — Phase 1: Core Engine
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Build `nanobot-core` Rust library with agent loop, tools, providers, session, memory, and cron — testable without any UI.
+**Goal:** Build `rustoctopus-core` Rust library with agent loop, tools, providers, session, memory, and cron — testable without any UI.
 
-**Architecture:** Cargo workspace with `nanobot-core` lib crate. Async runtime via tokio. All LLM providers accessed through a unified OpenAI-compatible HTTP client. Tools registered dynamically via trait objects.
+**Architecture:** Cargo workspace with `rustoctopus-core` lib crate. Async runtime via tokio. All LLM providers accessed through a unified OpenAI-compatible HTTP client. Tools registered dynamically via trait objects.
 
 **Tech Stack:** Rust 1.75+, tokio, reqwest, serde/serde_json, chrono, regex, async-trait, tracing
 
@@ -14,15 +14,15 @@
 
 **Files:**
 - Create: `Cargo.toml` (workspace root)
-- Create: `crates/nanobot-core/Cargo.toml`
-- Create: `crates/nanobot-core/src/lib.rs`
+- Create: `crates/rustoctopus-core/Cargo.toml`
+- Create: `crates/rustoctopus-core/src/lib.rs`
 
 **Step 1: Create workspace Cargo.toml**
 
 ```toml
 [workspace]
 resolver = "2"
-members = ["crates/nanobot-core"]
+members = ["crates/rustoctopus-core"]
 
 [workspace.dependencies]
 tokio = { version = "1", features = ["full"] }
@@ -40,11 +40,11 @@ thiserror = "2"
 anyhow = "1"
 ```
 
-**Step 2: Create nanobot-core Cargo.toml**
+**Step 2: Create rustoctopus-core Cargo.toml**
 
 ```toml
 [package]
-name = "nanobot-core"
+name = "rustoctopus-core"
 version = "0.1.0"
 edition = "2021"
 
@@ -89,7 +89,7 @@ Expected: compiles with warnings about empty modules
 
 ```bash
 git add crates/ Cargo.toml
-git commit -m "feat: scaffold Rust workspace with nanobot-core crate"
+git commit -m "feat: scaffold Rust workspace with rustoctopus-core crate"
 ```
 
 ---
@@ -97,10 +97,10 @@ git commit -m "feat: scaffold Rust workspace with nanobot-core crate"
 ### Task 2: Config Schema
 
 **Files:**
-- Create: `crates/nanobot-core/src/config/mod.rs`
-- Create: `crates/nanobot-core/src/config/schema.rs`
-- Create: `crates/nanobot-core/src/config/loader.rs`
-- Test: `crates/nanobot-core/src/config/tests.rs`
+- Create: `crates/rustoctopus-core/src/config/mod.rs`
+- Create: `crates/rustoctopus-core/src/config/schema.rs`
+- Create: `crates/rustoctopus-core/src/config/loader.rs`
+- Test: `crates/rustoctopus-core/src/config/tests.rs`
 
 **Step 1: Write test for config deserialization**
 
@@ -151,7 +151,7 @@ mod tests {
 
 **Step 2: Run test to verify it fails**
 
-Run: `cargo test -p nanobot-core config`
+Run: `cargo test -p rustoctopus-core config`
 Expected: FAIL — module not found
 
 **Step 3: Implement config schema**
@@ -190,7 +190,7 @@ pub struct AgentDefaults {
 impl Default for AgentDefaults {
     fn default() -> Self {
         Self {
-            workspace: "~/.nanobot/workspace".into(),
+            workspace: "~/.rustoctopus/workspace".into(),
             model: "anthropic/claude-opus-4-5".into(),
             max_tokens: 8192,
             temperature: 0.1,
@@ -310,7 +310,7 @@ use super::schema::Config;
 pub fn default_config_path() -> PathBuf {
     dirs::home_dir()
         .unwrap_or_else(|| PathBuf::from("."))
-        .join(".nanobot")
+        .join(".rustoctopus")
         .join("config.json")
 }
 
@@ -339,7 +339,7 @@ Note: add `dirs = "6"` to Cargo.toml dependencies.
 
 **Step 5: Run tests**
 
-Run: `cargo test -p nanobot-core config`
+Run: `cargo test -p rustoctopus-core config`
 Expected: all 3 tests PASS
 
 **Step 6: Commit**
@@ -353,9 +353,9 @@ git commit -am "feat: config schema with camelCase serde compat"
 ### Task 3: Message Bus
 
 **Files:**
-- Create: `crates/nanobot-core/src/bus/mod.rs`
-- Create: `crates/nanobot-core/src/bus/events.rs`
-- Create: `crates/nanobot-core/src/bus/queue.rs`
+- Create: `crates/rustoctopus-core/src/bus/mod.rs`
+- Create: `crates/rustoctopus-core/src/bus/events.rs`
+- Create: `crates/rustoctopus-core/src/bus/queue.rs`
 
 **Step 1: Write tests**
 
@@ -495,7 +495,7 @@ impl MessageBus {
 
 **Step 5: Run tests, verify PASS**
 
-Run: `cargo test -p nanobot-core bus`
+Run: `cargo test -p rustoctopus-core bus`
 
 **Step 6: Commit**
 
@@ -508,9 +508,9 @@ git commit -am "feat: message bus with tokio::mpsc channels"
 ### Task 4: Provider Traits + Registry
 
 **Files:**
-- Create: `crates/nanobot-core/src/providers/mod.rs`
-- Create: `crates/nanobot-core/src/providers/traits.rs`
-- Create: `crates/nanobot-core/src/providers/registry.rs`
+- Create: `crates/rustoctopus-core/src/providers/mod.rs`
+- Create: `crates/rustoctopus-core/src/providers/traits.rs`
+- Create: `crates/rustoctopus-core/src/providers/registry.rs`
 
 **Step 1: Write tests**
 
@@ -785,7 +785,7 @@ pub fn find_by_name(name: &str) -> Option<&'static ProviderSpec> {
 
 **Step 5: Run tests, verify PASS**
 
-Run: `cargo test -p nanobot-core providers`
+Run: `cargo test -p rustoctopus-core providers`
 
 **Step 6: Commit**
 
@@ -798,7 +798,7 @@ git commit -am "feat: LLM provider traits and static registry"
 ### Task 5: OpenAI-Compatible Client
 
 **Files:**
-- Create: `crates/nanobot-core/src/providers/openai_compat.rs`
+- Create: `crates/rustoctopus-core/src/providers/openai_compat.rs`
 
 **Step 1: Write test (uses mock or integration test marker)**
 
@@ -853,9 +853,9 @@ git commit -am "feat: OpenAI-compatible LLM client"
 ### Task 6: Tool Trait + Registry
 
 **Files:**
-- Create: `crates/nanobot-core/src/tools/mod.rs`
-- Create: `crates/nanobot-core/src/tools/registry.rs`
-- Create: `crates/nanobot-core/src/tools/traits.rs`
+- Create: `crates/rustoctopus-core/src/tools/mod.rs`
+- Create: `crates/rustoctopus-core/src/tools/registry.rs`
+- Create: `crates/rustoctopus-core/src/tools/traits.rs`
 
 **Step 1: Write tests**
 
@@ -925,7 +925,7 @@ git commit -am "feat: Tool trait and ToolRegistry"
 ### Task 7: Filesystem Tools
 
 **Files:**
-- Create: `crates/nanobot-core/src/tools/filesystem.rs`
+- Create: `crates/rustoctopus-core/src/tools/filesystem.rs`
 
 **Step 1: Write tests**
 
@@ -1016,7 +1016,7 @@ git commit -am "feat: filesystem tools (read, write, edit, list_dir)"
 ### Task 8: Shell Tool
 
 **Files:**
-- Create: `crates/nanobot-core/src/tools/shell.rs`
+- Create: `crates/rustoctopus-core/src/tools/shell.rs`
 
 **Step 1: Write tests**
 
@@ -1070,7 +1070,7 @@ git commit -am "feat: shell exec tool with safety guards"
 ### Task 9: Web Tools
 
 **Files:**
-- Create: `crates/nanobot-core/src/tools/web.rs`
+- Create: `crates/rustoctopus-core/src/tools/web.rs`
 
 **Step 1: Write tests** (unit tests for URL validation and HTML stripping; actual API tests marked `#[ignore]`)
 
@@ -1120,8 +1120,8 @@ git commit -am "feat: web search and fetch tools"
 ### Task 10: Session Manager
 
 **Files:**
-- Create: `crates/nanobot-core/src/session/mod.rs`
-- Create: `crates/nanobot-core/src/session/manager.rs`
+- Create: `crates/rustoctopus-core/src/session/mod.rs`
+- Create: `crates/rustoctopus-core/src/session/manager.rs`
 
 **Step 1: Write tests**
 
@@ -1191,7 +1191,7 @@ git commit -am "feat: session manager with JSONL persistence"
 ### Task 11: Memory System
 
 **Files:**
-- Create: `crates/nanobot-core/src/agent/memory.rs`
+- Create: `crates/rustoctopus-core/src/agent/memory.rs`
 
 **Step 1: Write tests**
 
@@ -1247,8 +1247,8 @@ git commit -am "feat: dual-layer memory system"
 ### Task 12: Context Builder
 
 **Files:**
-- Create: `crates/nanobot-core/src/agent/context.rs`
-- Create: `crates/nanobot-core/src/agent/skills.rs`
+- Create: `crates/rustoctopus-core/src/agent/context.rs`
+- Create: `crates/rustoctopus-core/src/agent/skills.rs`
 
 **Step 1: Write tests**
 
@@ -1263,7 +1263,7 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let ctx = ContextBuilder::new(dir.path().to_path_buf());
         let prompt = ctx.build_system_prompt();
-        assert!(prompt.contains("nanobot"));
+        assert!(prompt.contains("rustoctopus"));
         assert!(prompt.contains("Workspace"));
     }
 
@@ -1303,7 +1303,7 @@ git commit -am "feat: context builder with bootstrap files and memory"
 ### Task 13: Agent Loop
 
 **Files:**
-- Create: `crates/nanobot-core/src/agent/loop.rs`
+- Create: `crates/rustoctopus-core/src/agent/loop.rs`
 
 **Step 1: Write test with mock provider**
 
@@ -1374,9 +1374,9 @@ git commit -am "feat: agent loop with tool iteration and session management"
 ### Task 14: Message + Spawn + Cron Tools
 
 **Files:**
-- Create: `crates/nanobot-core/src/tools/message.rs`
-- Create: `crates/nanobot-core/src/tools/spawn.rs`
-- Create: `crates/nanobot-core/src/tools/cron_tool.rs`
+- Create: `crates/rustoctopus-core/src/tools/message.rs`
+- Create: `crates/rustoctopus-core/src/tools/spawn.rs`
+- Create: `crates/rustoctopus-core/src/tools/cron_tool.rs`
 
 **Step 1: Write tests for each**
 
@@ -1399,7 +1399,7 @@ git commit -am "feat: message, spawn, and cron tools"
 ### Task 15: Subagent Manager
 
 **Files:**
-- Create: `crates/nanobot-core/src/agent/subagent.rs`
+- Create: `crates/rustoctopus-core/src/agent/subagent.rs`
 
 **Step 1: Write test**
 
@@ -1433,9 +1433,9 @@ git commit -am "feat: subagent manager for background tasks"
 ### Task 16: Cron Service
 
 **Files:**
-- Create: `crates/nanobot-core/src/cron/mod.rs`
-- Create: `crates/nanobot-core/src/cron/types.rs`
-- Create: `crates/nanobot-core/src/cron/service.rs`
+- Create: `crates/rustoctopus-core/src/cron/mod.rs`
+- Create: `crates/rustoctopus-core/src/cron/types.rs`
+- Create: `crates/rustoctopus-core/src/cron/service.rs`
 
 Note: add `cron = "0.15"` to dependencies for cron expression parsing.
 
@@ -1495,14 +1495,14 @@ git commit -am "feat: cron service with timer scheduling"
 ### Task 17: Integration Test — Full Agent Round Trip
 
 **Files:**
-- Create: `crates/nanobot-core/tests/integration.rs`
+- Create: `crates/rustoctopus-core/tests/integration.rs`
 
 **Step 1: Write integration test**
 
 ```rust
-use nanobot_core::bus::queue::MessageBus;
-use nanobot_core::agent::AgentLoop;
-use nanobot_core::providers::traits::*;
+use rustoctopus_core::bus::queue::MessageBus;
+use rustoctopus_core::agent::AgentLoop;
+use rustoctopus_core::providers::traits::*;
 use tempfile::TempDir;
 
 struct EchoProvider;
@@ -1557,7 +1557,7 @@ async fn test_session_persistence_across_turns() {
 
 **Step 2: Run integration tests**
 
-Run: `cargo test -p nanobot-core --test integration`
+Run: `cargo test -p rustoctopus-core --test integration`
 Expected: PASS
 
 **Step 3: Commit**
@@ -1572,12 +1572,12 @@ git commit -am "test: integration tests for full agent round trip"
 
 **Step 1: Run full test suite**
 
-Run: `cargo test -p nanobot-core`
+Run: `cargo test -p rustoctopus-core`
 Expected: all tests PASS
 
 **Step 2: Run clippy**
 
-Run: `cargo clippy -p nanobot-core -- -D warnings`
+Run: `cargo clippy -p rustoctopus-core -- -D warnings`
 Fix any warnings.
 
 **Step 3: Commit**
@@ -1611,4 +1611,4 @@ git commit -am "chore: clippy fixes and Phase 1 complete"
 | 17 | test | Integration test |
 | 18 | cleanup | Clippy + final verification |
 
-**Phase 1 deliverable:** `nanobot-core` lib crate, fully tested, with agent loop that can process messages end-to-end using a mock or real LLM provider.
+**Phase 1 deliverable:** `rustoctopus-core` lib crate, fully tested, with agent loop that can process messages end-to-end using a mock or real LLM provider.

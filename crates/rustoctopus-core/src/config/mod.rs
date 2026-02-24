@@ -17,7 +17,7 @@ mod tests {
 
         // AgentDefaults
         let defaults = &config.agents.defaults;
-        assert_eq!(defaults.workspace, "~/.nanobot/workspace");
+        assert_eq!(defaults.workspace, "~/.rustoctopus/workspace");
         assert_eq!(defaults.model, "anthropic/claude-opus-4-5");
         assert_eq!(defaults.max_tokens, 8192);
         assert!((defaults.temperature - 0.1).abs() < f64::EPSILON);

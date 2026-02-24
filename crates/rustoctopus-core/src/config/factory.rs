@@ -77,9 +77,9 @@ mod tests {
 
     #[test]
     fn test_resolve_workspace_expands_tilde() {
-        let path = resolve_workspace_path("~/.nanobot/workspace");
+        let path = resolve_workspace_path("~/.rustoctopus/workspace");
         assert!(!path.to_string_lossy().contains('~'));
-        assert!(path.to_string_lossy().contains("nanobot"));
+        assert!(path.to_string_lossy().contains("rustoctopus"));
     }
 
     #[test]

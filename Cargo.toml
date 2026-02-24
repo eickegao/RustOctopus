@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/nanobot-core", "crates/nanobot-cli"]
+members = ["crates/rustoctopus-core", "crates/rustoctopus-cli"]
 
 [workspace.dependencies]
 tokio = { version = "1", features = ["full"] }

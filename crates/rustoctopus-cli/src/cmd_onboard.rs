@@ -2,8 +2,8 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 
-use nanobot_core::config::loader::{default_config_path, save_config};
-use nanobot_core::config::schema::Config;
+use rustoctopus_core::config::loader::{default_config_path, save_config};
+use rustoctopus_core::config::schema::Config;
 
 const AGENTS_MD: &str = r#"# Agents
 
@@ -29,16 +29,16 @@ const IDENTITY_MD: &str = r#"# Identity
 
 The identity and name of your assistant.
 
-Name: nanobot
+Name: RustOctopus
 "#;
 
 pub fn run() -> Result<()> {
-    let nanobot_dir = dirs::home_dir()
+    let app_dir = dirs::home_dir()
         .unwrap_or_else(|| PathBuf::from("."))
-        .join(".nanobot");
+        .join(".rustoctopus");
 
     let config_path = default_config_path();
-    let workspace_dir = nanobot_dir.join("workspace");
+    let workspace_dir = app_dir.join("workspace");
     let skills_dir = workspace_dir.join("skills");
     let sessions_dir = workspace_dir.join("sessions");
 
@@ -73,7 +73,7 @@ pub fn run() -> Result<()> {
         }
     }
 
-    println!("\nnanobot setup complete!");
+    println!("\nRustOctopus setup complete!");
     println!("  Config:    {}", config_path.display());
     println!("  Workspace: {}", workspace_dir.display());
     println!("\nEdit {} to configure your API keys and model.", config_path.display());

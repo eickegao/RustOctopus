@@ -1,13 +1,13 @@
-//! CLI integration tests for nanobot-cli.
+//! CLI integration tests for rustoctopus-cli.
 //!
 //! Tests CLI argument parsing and config factory round-trip.
 
-use nanobot_core::agent::AgentLoop;
-use nanobot_core::bus::queue::MessageBus;
-use nanobot_core::channels::{Channel, ChannelManager};
-use nanobot_core::config::factory::{create_provider, resolve_workspace_path};
-use nanobot_core::config::schema::Config;
-use nanobot_core::providers::traits::*;
+use rustoctopus_core::agent::AgentLoop;
+use rustoctopus_core::bus::queue::MessageBus;
+use rustoctopus_core::channels::{Channel, ChannelManager};
+use rustoctopus_core::config::factory::{create_provider, resolve_workspace_path};
+use rustoctopus_core::config::schema::Config;
+use rustoctopus_core::providers::traits::*;
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -57,7 +57,7 @@ impl LlmProvider for EchoProvider {
 struct MockChannel {
     name: String,
     started: Arc<AtomicBool>,
-    sent: Arc<Mutex<Vec<nanobot_core::bus::events::OutboundMessage>>>,
+    sent: Arc<Mutex<Vec<rustoctopus_core::bus::events::OutboundMessage>>>,
 }
 
 impl MockChannel {
@@ -83,7 +83,7 @@ impl Channel for MockChannel {
         self.started.store(false, Ordering::SeqCst);
         Ok(())
     }
-    async fn send(&self, msg: nanobot_core::bus::events::OutboundMessage) -> anyhow::Result<()> {
+    async fn send(&self, msg: rustoctopus_core::bus::events::OutboundMessage) -> anyhow::Result<()> {
         self.sent.lock().unwrap().push(msg);
         Ok(())
     }
@@ -98,7 +98,7 @@ impl Channel for MockChannel {
 
 #[test]
 fn test_resolve_workspace_expands_tilde() {
-    let path = resolve_workspace_path("~/.nanobot/workspace");
+    let path = resolve_workspace_path("~/.rustoctopus/workspace");
     assert!(!path.to_string_lossy().contains('~'));
 }
 
@@ -150,7 +150,7 @@ async fn test_channel_manager_dispatch() {
     mgr.start_all().await.unwrap();
 
     // Publish outbound message
-    bus.publish_outbound(nanobot_core::bus::events::OutboundMessage::new(
+    bus.publish_outbound(rustoctopus_core::bus::events::OutboundMessage::new(
         "mock",
         "chat1",
         "test dispatch",
