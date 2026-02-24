@@ -116,6 +116,33 @@ pub struct FeishuConfig {
 }
 
 // ---------------------------------------------------------------------------
+// WhatsAppConfig
+// ---------------------------------------------------------------------------
+
+/// WhatsApp channel configuration.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase", default)]
+pub struct WhatsAppConfig {
+    pub enabled: bool,
+    pub allow_from: Vec<String>,
+    pub bridge_port: u16,
+    pub bridge_token: Option<String>,
+    pub auto_start_bridge: bool,
+}
+
+impl Default for WhatsAppConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            allow_from: Vec::new(),
+            bridge_port: 3001,
+            bridge_token: None,
+            auto_start_bridge: true,
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // ChannelsConfig
 // ---------------------------------------------------------------------------
 
@@ -127,6 +154,7 @@ pub struct ChannelsConfig {
     pub send_tool_hints: bool,
     pub telegram: TelegramConfig,
     pub feishu: FeishuConfig,
+    pub whatsapp: WhatsAppConfig,
 }
 
 impl Default for ChannelsConfig {
@@ -136,6 +164,7 @@ impl Default for ChannelsConfig {
             send_tool_hints: false,
             telegram: TelegramConfig::default(),
             feishu: FeishuConfig::default(),
+            whatsapp: WhatsAppConfig::default(),
         }
     }
 }
@@ -236,4 +265,43 @@ pub struct Config {
     pub providers: ProvidersConfig,
     pub gateway: GatewayConfig,
     pub tools: ToolsConfig,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_whatsapp_config_defaults() {
+        let config: WhatsAppConfig = serde_json::from_str("{}").unwrap();
+        assert!(!config.enabled);
+        assert!(config.allow_from.is_empty());
+        assert_eq!(config.bridge_port, 3001);
+        assert!(config.bridge_token.is_none());
+        assert!(config.auto_start_bridge);
+    }
+
+    #[test]
+    fn test_whatsapp_config_camel_case() {
+        let json = r#"{
+            "enabled": true,
+            "allowFrom": ["+1234567890"],
+            "bridgePort": 4000,
+            "bridgeToken": "secret",
+            "autoStartBridge": false
+        }"#;
+        let config: WhatsAppConfig = serde_json::from_str(json).unwrap();
+        assert!(config.enabled);
+        assert_eq!(config.allow_from, vec!["+1234567890"]);
+        assert_eq!(config.bridge_port, 4000);
+        assert_eq!(config.bridge_token, Some("secret".to_string()));
+        assert!(!config.auto_start_bridge);
+    }
+
+    #[test]
+    fn test_channels_config_includes_whatsapp() {
+        let json = r#"{"whatsapp": {"enabled": true}}"#;
+        let config: ChannelsConfig = serde_json::from_str(json).unwrap();
+        assert!(config.whatsapp.enabled);
+    }
 }
