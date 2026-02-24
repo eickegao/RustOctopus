@@ -1,7 +1,8 @@
-pub mod bus;
-pub mod config;
-pub mod providers;
-pub mod tools;
 pub mod agent;
-pub mod session;
+pub mod bus;
+pub mod channels;
+pub mod config;
 pub mod cron;
+pub mod providers;
+pub mod session;
+pub mod tools;

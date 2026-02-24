@@ -1,6 +1,8 @@
+pub mod factory;
 pub mod loader;
 pub mod schema;
 
+pub use factory::{create_provider, resolve_workspace_path};
 pub use schema::Config;
 
 #[cfg(test)]

@@ -18,6 +18,15 @@ thiserror = { workspace = true }
 anyhow = { workspace = true }
 dirs = { workspace = true }
 cron = { workspace = true }
+teloxide = { version = "0.13", features = ["macros"], optional = true }
+tokio-tungstenite = { version = "0.24", features = ["native-tls"], optional = true }
+url = { version = "2", optional = true }
+futures-util = { version = "0.3", optional = true }
+
+[features]
+default = ["telegram", "feishu"]
+telegram = ["dep:teloxide"]
+feishu = ["dep:tokio-tungstenite", "dep:url", "dep:futures-util"]
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util"] }

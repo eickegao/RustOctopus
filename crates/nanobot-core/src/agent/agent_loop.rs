@@ -14,6 +14,8 @@ use tracing::{info, warn};
 use crate::agent::context::ContextBuilder;
 use crate::bus::events::{InboundMessage, OutboundMessage};
 use crate::bus::queue::MessageBus;
+use crate::config::factory::resolve_workspace_path;
+use crate::config::schema::Config;
 use crate::providers::traits::{
     ChatMessage, ChatParams, LlmProvider, Role, ToolCallFunction, ToolCallMessage, ToolDefinition,
 };
@@ -36,13 +38,13 @@ pub struct AgentLoop {
     #[allow(dead_code)]
     workspace: PathBuf,
     model: String,
-    max_iterations: usize,
-    temperature: f64,
-    max_tokens: u32,
-    memory_window: usize,
+    pub(crate) max_iterations: usize,
+    pub(crate) temperature: f64,
+    pub(crate) max_tokens: u32,
+    pub(crate) memory_window: usize,
     context: ContextBuilder,
     sessions: SessionManager,
-    tools: ToolRegistry,
+    pub(crate) tools: ToolRegistry,
     inbound_rx: mpsc::UnboundedReceiver<InboundMessage>,
     _running: bool,
 }
@@ -93,6 +95,25 @@ impl AgentLoop {
             inbound_rx,
             _running: false,
         }
+    }
+
+    /// Create a new `AgentLoop` from a [`Config`].
+    ///
+    /// Resolves workspace path (tilde expansion), applies agent defaults
+    /// (max_iterations, temperature, max_tokens, memory_window) from config.
+    pub fn from_config(
+        config: Config,
+        bus: MessageBus,
+        provider: Box<dyn LlmProvider>,
+        inbound_rx: mpsc::UnboundedReceiver<InboundMessage>,
+    ) -> Self {
+        let workspace = resolve_workspace_path(&config.agents.defaults.workspace);
+        let mut agent = Self::new(bus, provider, workspace, inbound_rx);
+        agent.max_iterations = config.agents.defaults.max_tool_iterations as usize;
+        agent.temperature = config.agents.defaults.temperature;
+        agent.max_tokens = config.agents.defaults.max_tokens;
+        agent.memory_window = config.agents.defaults.memory_window as usize;
+        agent
     }
 
     /// Main loop: receive messages from the bus, process them, and send responses.
@@ -413,6 +434,7 @@ impl AgentLoop {
 mod tests {
     use super::*;
     use crate::bus::queue::MessageBus;
+    use crate::config::schema::Config;
     use crate::providers::traits::*;
     use tempfile::TempDir;
 
@@ -440,6 +462,28 @@ mod tests {
         fn default_model(&self) -> &str {
             "mock"
         }
+    }
+
+    #[tokio::test]
+    async fn test_from_config() {
+        let dir = TempDir::new().unwrap();
+        let mut config = Config::default();
+        config.agents.defaults.max_tool_iterations = 10;
+        config.agents.defaults.temperature = 0.5;
+        config.agents.defaults.max_tokens = 2048;
+        config.agents.defaults.memory_window = 50;
+        config.agents.defaults.workspace = dir.path().to_string_lossy().to_string();
+
+        let provider = Box::new(MockProvider {
+            response: "ok".into(),
+        });
+        let (bus, inbound_rx, _outbound_rx) = MessageBus::new();
+
+        let agent = AgentLoop::from_config(config, bus, provider, inbound_rx);
+        assert_eq!(agent.max_iterations, 10);
+        assert!((agent.temperature - 0.5).abs() < f64::EPSILON);
+        assert_eq!(agent.max_tokens, 2048);
+        assert_eq!(agent.memory_window, 50);
     }
 
     #[tokio::test]
