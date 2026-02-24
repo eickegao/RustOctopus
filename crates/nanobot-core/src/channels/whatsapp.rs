@@ -23,17 +23,22 @@ const MAX_MESSAGE_LEN: usize = 4000;
 /// Events received from the WhatsApp bridge via WebSocket.
 #[derive(Deserialize, Debug, Clone)]
 #[serde(tag = "type")]
+#[allow(dead_code)] // Fields are populated by serde deserialization
 pub(crate) enum BridgeEvent {
     /// An incoming WhatsApp message.
     #[serde(rename = "message")]
     Message {
-        from: String,
-        #[serde(default, alias = "chatId")]
-        chat_id: String,
         #[serde(default)]
-        body: String,
-        #[serde(default, alias = "pushName")]
-        push_name: Option<String>,
+        id: String,
+        sender: String,
+        #[serde(default)]
+        pn: String,
+        #[serde(default)]
+        content: String,
+        #[serde(default)]
+        timestamp: u64,
+        #[serde(default, rename = "isGroup")]
+        is_group: bool,
     },
     /// QR code for pairing.
     #[serde(rename = "qr")]
@@ -77,7 +82,7 @@ pub(crate) struct SendCommand<'a> {
     #[serde(rename = "type")]
     pub msg_type: &'a str,
     pub to: &'a str,
-    pub body: &'a str,
+    pub text: &'a str,
 }
 
 // ---------------------------------------------------------------------------
@@ -127,7 +132,7 @@ impl Channel for WhatsAppChannel {
     async fn start(&mut self) -> Result<()> {
         // Optionally start the bridge child process
         if self.config.auto_start_bridge {
-            match start_bridge_process(self.config.bridge_port) {
+            match start_bridge_process(self.config.bridge_port, &self.config) {
                 Ok(child) => {
                     info!("WhatsApp bridge process started (pid={})", child.id().unwrap_or(0));
                     *self.bridge_child.lock().await = Some(child);
@@ -198,29 +203,22 @@ impl Channel for WhatsAppChannel {
     }
 
     async fn send(&self, msg: OutboundMessage) -> Result<()> {
-        let sink_guard = self.ws_sink.lock().await;
-        let Some(ref _ws) = *sink_guard else {
-            anyhow::bail!("WhatsApp WebSocket not connected");
-        };
-        drop(sink_guard);
+        let mut sink_guard = self.ws_sink.lock().await;
+        let sink = sink_guard
+            .as_mut()
+            .ok_or_else(|| anyhow::anyhow!("WhatsApp WebSocket not connected"))?;
 
+        use futures_util::SinkExt;
         for chunk in split_message(&msg.content, MAX_MESSAGE_LEN) {
             let cmd = SendCommand {
                 msg_type: "send",
                 to: &msg.chat_id,
-                body: &chunk,
+                text: &chunk,
             };
-            let json = serde_json::to_string(&cmd)?;
-
-            let mut sink_guard = self.ws_sink.lock().await;
-            if let Some(ref mut ws) = *sink_guard {
-                use futures_util::SinkExt;
-                ws.send(tokio_tungstenite::tungstenite::Message::Text(json))
-                    .await
-                    .map_err(|e| anyhow::anyhow!("WhatsApp WS send error: {}", e))?;
-            } else {
-                anyhow::bail!("WhatsApp WebSocket disconnected during send");
-            }
+            let payload = serde_json::to_string(&cmd)?;
+            sink.send(tokio_tungstenite::tungstenite::Message::Text(payload))
+                .await
+                .map_err(|e| anyhow::anyhow!("WhatsApp WS send error: {}", e))?;
         }
 
         Ok(())
@@ -319,19 +317,22 @@ async fn handle_bridge_message(raw: &str, bus: &MessageBus, allow_from: &[String
 
     match event {
         BridgeEvent::Message {
-            from,
-            chat_id,
-            body,
-            push_name,
+            id: _,
+            sender,
+            pn,
+            content,
+            timestamp: _,
+            is_group: _,
         } => {
-            if body.is_empty() {
+            if content.is_empty() {
                 return;
             }
 
             // Build composite sender_id: "phone|pushName"
-            let sender_id = match push_name {
-                Some(ref name) if !name.is_empty() => format!("{}|{}", from, name),
-                _ => from.clone(),
+            let sender_id = if !pn.is_empty() {
+                format!("{}|{}", sender, pn)
+            } else {
+                sender.clone()
             };
 
             // ACL check
@@ -340,17 +341,17 @@ async fn handle_bridge_message(raw: &str, bus: &MessageBus, allow_from: &[String
                 return;
             }
 
-            // Use chat_id if present, otherwise fall back to from (direct message)
-            let effective_chat_id = if chat_id.is_empty() { &from } else { &chat_id };
+            // For WhatsApp, sender is the chat JID (remoteJid)
+            let effective_chat_id = &sender;
 
             debug!(
                 "WhatsApp message from {} in {}: {}...",
                 sender_id,
                 effective_chat_id,
-                &body[..body.len().min(50)]
+                &content[..content.len().min(50)]
             );
 
-            let inbound = InboundMessage::new("whatsapp", &sender_id, effective_chat_id, &body);
+            let inbound = InboundMessage::new("whatsapp", &sender_id, effective_chat_id, &content);
             bus.publish_inbound(inbound).await;
         }
         BridgeEvent::Qr { qr } => {
@@ -422,16 +423,36 @@ fn split_message(content: &str, max_len: usize) -> Vec<String> {
 }
 
 /// Attempt to start the Node.js WhatsApp bridge as a child process.
-fn start_bridge_process(port: u16) -> Result<Child> {
+fn start_bridge_process(port: u16, config: &WhatsAppConfig) -> Result<Child> {
     let bridge_dir = find_bridge_dir()?;
-    let child = tokio::process::Command::new("node")
-        .arg("index.js")
-        .env("PORT", port.to_string())
-        .current_dir(&bridge_dir)
+    let dist_entry = bridge_dir.join("dist").join("index.js");
+    if !dist_entry.exists() {
+        anyhow::bail!(
+            "Bridge not built. Run 'npm install && npm run build' in {}",
+            bridge_dir.display()
+        );
+    }
+
+    let mut cmd = tokio::process::Command::new("node");
+    cmd.arg(&dist_entry)
+        .env("BRIDGE_PORT", port.to_string())
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
+        .kill_on_drop(true);
+
+    if let Some(ref token) = config.bridge_token {
+        cmd.env("BRIDGE_TOKEN", token);
+    }
+
+    let auth_dir = dirs::home_dir()
+        .unwrap_or_default()
+        .join(".nanobot")
+        .join("whatsapp-auth");
+    cmd.env("AUTH_DIR", auth_dir.to_string_lossy().to_string());
+
+    let child = cmd
         .spawn()
-        .map_err(|e| anyhow::anyhow!("Failed to spawn bridge process in {:?}: {}", bridge_dir, e))?;
+        .map_err(|e| anyhow::anyhow!("Failed to spawn bridge process at {:?}: {}", dist_entry, e))?;
 
     Ok(child)
 }
@@ -520,21 +541,61 @@ mod tests {
     fn test_parse_bridge_message_event() {
         let json = r#"{
             "type": "message",
-            "from": "+1234567890",
-            "chatId": "120363001234@g.us",
-            "body": "Hello from WhatsApp",
-            "pushName": "Alice"
+            "id": "ABC123",
+            "sender": "1234567890@s.whatsapp.net",
+            "pn": "Alice",
+            "content": "Hello from WhatsApp",
+            "timestamp": 1700000000,
+            "isGroup": false
         }"#;
         let event: BridgeEvent = serde_json::from_str(json).unwrap();
         match event {
-            BridgeEvent::Message { from, chat_id, body, push_name } => {
-                assert_eq!(from, "+1234567890");
-                assert_eq!(chat_id, "120363001234@g.us");
-                assert_eq!(body, "Hello from WhatsApp");
-                assert_eq!(push_name, Some("Alice".to_string()));
+            BridgeEvent::Message { id, sender, pn, content, timestamp, is_group } => {
+                assert_eq!(id, "ABC123");
+                assert_eq!(sender, "1234567890@s.whatsapp.net");
+                assert_eq!(pn, "Alice");
+                assert_eq!(content, "Hello from WhatsApp");
+                assert_eq!(timestamp, 1700000000);
+                assert!(!is_group);
             }
             _ => panic!("Expected Message event"),
         }
+    }
+
+    #[test]
+    fn test_parse_bridge_message_group() {
+        let json = r#"{
+            "type": "message",
+            "id": "DEF456",
+            "sender": "120363001234@g.us",
+            "pn": "",
+            "content": "Group message",
+            "timestamp": 1700000001,
+            "isGroup": true
+        }"#;
+        let event: BridgeEvent = serde_json::from_str(json).unwrap();
+        match event {
+            BridgeEvent::Message { is_group, .. } => {
+                assert!(is_group);
+            }
+            _ => panic!("Expected Message event"),
+        }
+    }
+
+    #[test]
+    fn test_send_command_serialization() {
+        let cmd = SendCommand {
+            msg_type: "send",
+            to: "1234567890@s.whatsapp.net",
+            text: "Hello!",
+        };
+        let json = serde_json::to_string(&cmd).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed["type"], "send");
+        assert_eq!(parsed["to"], "1234567890@s.whatsapp.net");
+        assert_eq!(parsed["text"], "Hello!");
+        // Ensure the old "body" field is not present
+        assert!(parsed.get("body").is_none());
     }
 
     #[test]
