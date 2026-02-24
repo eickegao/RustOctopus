@@ -117,7 +117,7 @@ mod tests {
 
     #[test]
     fn test_load_nonexistent_returns_default() {
-        let path = Path::new("/tmp/nanobot_test_nonexistent_config_12345.json");
+        let path = Path::new("/tmp/rustoctopus_test_nonexistent_config_12345.json");
         // Make sure it doesn't exist
         let _ = std::fs::remove_file(path);
 

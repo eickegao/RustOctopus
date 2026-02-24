@@ -52,8 +52,8 @@ impl SkillMetadata {
             .unwrap_or(false)
     }
 
-    /// Parse nanobot-specific metadata from the `metadata` field (JSON).
-    pub fn nanobot_metadata(&self) -> HashMap<String, serde_json::Value> {
+    /// Parse RustOctopus-specific metadata from the `metadata` field (JSON).
+    pub fn rustoctopus_metadata(&self) -> HashMap<String, serde_json::Value> {
         let raw = match self.fields.get("metadata") {
             Some(s) => s,
             None => return HashMap::new(),
@@ -225,8 +225,8 @@ impl SkillsLoader {
                 if meta.is_always() {
                     result.push(s.name.clone());
                 }
-                // Also check nanobot metadata
-                let nb_meta = meta.nanobot_metadata();
+                // Also check rustoctopus metadata
+                let nb_meta = meta.rustoctopus_metadata();
                 if nb_meta.get("always") == Some(&serde_json::Value::Bool(true))
                     && !result.contains(&s.name)
                 {

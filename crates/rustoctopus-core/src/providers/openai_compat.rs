@@ -176,6 +176,12 @@ impl OpenAiCompatClient {
                     }
                     return format!("{}/{}", spec.model_prefix, model);
                 }
+                // model_prefix is empty: strip "provider/" prefix if present
+                // e.g. "openai/gpt-4o" -> "gpt-4o" for OpenAI API
+                let name_prefix = format!("{}/", spec.name);
+                if let Some(stripped) = model.strip_prefix(&name_prefix) {
+                    return stripped.to_string();
+                }
             }
             model.to_string()
         }
@@ -440,13 +446,24 @@ mod tests {
     }
 
     #[test]
-    fn test_resolve_model_anthropic_no_prefix() {
-        // Anthropic has model_prefix="" -> no prefix added.
-        // "anthropic/claude-sonnet-4-5" stays as-is.
+    fn test_resolve_model_anthropic_strips_prefix() {
+        // Anthropic has model_prefix="" -> strip "anthropic/" prefix.
+        // "anthropic/claude-sonnet-4-5" -> "claude-sonnet-4-5"
         let client = OpenAiCompatClient::new_for_test(None, "test-key");
         assert_eq!(
             client.resolve_model("anthropic/claude-sonnet-4-5"),
-            "anthropic/claude-sonnet-4-5"
+            "claude-sonnet-4-5"
+        );
+    }
+
+    #[test]
+    fn test_resolve_model_openai_strips_prefix() {
+        // OpenAI has model_prefix="" -> strip "openai/" prefix.
+        // "openai/gpt-4o" -> "gpt-4o"
+        let client = OpenAiCompatClient::new_for_test(None, "test-key");
+        assert_eq!(
+            client.resolve_model("openai/gpt-4o"),
+            "gpt-4o"
         );
     }
 
