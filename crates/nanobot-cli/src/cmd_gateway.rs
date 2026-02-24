@@ -38,6 +38,16 @@ pub async fn run(config: Config) -> Result<()> {
         info!("Feishu channel registered");
     }
 
+    #[cfg(feature = "whatsapp")]
+    if config.channels.whatsapp.enabled {
+        let whatsapp = nanobot_core::channels::WhatsAppChannel::new(
+            config.channels.whatsapp.clone(),
+            bus.clone(),
+        );
+        channel_mgr.add_channel(Box::new(whatsapp));
+        info!("WhatsApp channel registered");
+    }
+
     // 5. Start channels
     channel_mgr.start_all().await?;
 

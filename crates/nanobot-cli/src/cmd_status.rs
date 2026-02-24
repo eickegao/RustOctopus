@@ -74,6 +74,10 @@ pub fn run() -> Result<()> {
         "  Feishu:    {}",
         if config.channels.feishu.enabled { "enabled" } else { "disabled" }
     );
+    println!(
+        "  WhatsApp:  {}",
+        if config.channels.whatsapp.enabled { "enabled" } else { "disabled" }
+    );
 
     // Gateway
     println!("\nGateway:   {}:{}", config.gateway.host, config.gateway.port);
