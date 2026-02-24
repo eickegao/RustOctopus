@@ -24,9 +24,10 @@ url = { version = "2", optional = true }
 futures-util = { version = "0.3", optional = true }
 
 [features]
-default = ["telegram", "feishu"]
+default = ["telegram", "feishu", "whatsapp"]
 telegram = ["dep:teloxide"]
 feishu = ["dep:tokio-tungstenite", "dep:url", "dep:futures-util"]
+whatsapp = ["dep:tokio-tungstenite", "dep:url", "dep:futures-util"]
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util"] }
