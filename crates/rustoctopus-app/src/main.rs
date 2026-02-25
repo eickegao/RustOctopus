@@ -1,14 +1,30 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod state;
+
 use tauri::{
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
     Manager, WindowEvent,
 };
+use tracing_subscriber::EnvFilter;
 
 fn main() {
+    tracing_subscriber::fmt()
+        .with_env_filter(EnvFilter::from_default_env().add_directive("info".parse().unwrap()))
+        .init();
+
+    let rt = tokio::runtime::Runtime::new().expect("failed to create tokio runtime");
+
+    let app_state = rt.block_on(async {
+        state::AppState::boot()
+            .await
+            .expect("failed to boot gateway")
+    });
+
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
+        .manage(app_state)
         .setup(|app| {
             // Build tray menu
             let show = MenuItem::with_id(app, "show", "Show Window", true, None::<&str>)?;
