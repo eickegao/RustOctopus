@@ -1,8 +1,8 @@
 import { BrowserRouter, Routes, Route, NavLink } from "react-router-dom";
-
-function Placeholder({ name }: { name: string }) {
-  return <div className="p-6 text-xl font-semibold">{name}</div>;
-}
+import Dashboard from "./views/Dashboard";
+import ConfigView from "./views/Config";
+import Channels from "./views/Channels";
+import Cron from "./views/Cron";
 
 const navItems = [
   { to: "/", label: "Dashboard" },
@@ -15,7 +15,6 @@ export default function App() {
   return (
     <BrowserRouter>
       <div className="flex h-screen">
-        {/* Sidebar */}
         <nav className="w-56 shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col">
           <div className="p-4 text-lg font-bold tracking-tight">
             RustOctopus
@@ -39,13 +38,12 @@ export default function App() {
           </div>
         </nav>
 
-        {/* Content */}
         <main className="flex-1 overflow-y-auto">
           <Routes>
-            <Route path="/" element={<Placeholder name="Dashboard" />} />
-            <Route path="/config" element={<Placeholder name="Config" />} />
-            <Route path="/channels" element={<Placeholder name="Channels" />} />
-            <Route path="/cron" element={<Placeholder name="Cron" />} />
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/config" element={<ConfigView />} />
+            <Route path="/channels" element={<Channels />} />
+            <Route path="/cron" element={<Cron />} />
           </Routes>
         </main>
       </div>
