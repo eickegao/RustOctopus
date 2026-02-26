@@ -3,7 +3,9 @@ pub mod loader;
 pub mod schema;
 
 pub use factory::{create_provider, resolve_workspace_path};
-pub use schema::Config;
+pub use schema::{
+    build_mcp_tool_name, parse_mcp_tool_name, Config, McpConfig, McpServerConfig,
+};
 
 #[cfg(test)]
 mod tests {
@@ -145,5 +147,52 @@ mod tests {
 
         let loaded = load_config(Some(&path)).expect("Failed to load config");
         assert_eq!(config, loaded);
+    }
+
+    #[test]
+    fn test_mcp_config_defaults() {
+        let config: Config = serde_json::from_str("{}").unwrap();
+        assert!(!config.mcp.enabled);
+        assert_eq!(config.mcp.servers.len(), 0);
+    }
+
+    #[test]
+    fn test_mcp_config_deserialize() {
+        let json = r#"{
+            "mcp": {
+                "enabled": true,
+                "servers": {
+                    "filesystem": {
+                        "command": "npx",
+                        "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"],
+                        "env": {},
+                        "enabled": true,
+                        "autoApprove": ["read_file"]
+                    }
+                }
+            }
+        }"#;
+        let config: Config = serde_json::from_str(json).unwrap();
+        assert!(config.mcp.enabled);
+        assert_eq!(config.mcp.servers.len(), 1);
+        let fs = &config.mcp.servers["filesystem"];
+        assert_eq!(fs.command, "npx");
+        assert_eq!(fs.args.len(), 3);
+        assert_eq!(fs.auto_approve, vec!["read_file"]);
+    }
+
+    #[test]
+    fn test_parse_mcp_tool_name() {
+        use super::schema::{parse_mcp_tool_name};
+        assert_eq!(parse_mcp_tool_name("mcp_filesystem_read_file"), Some(("filesystem", "read_file")));
+        assert_eq!(parse_mcp_tool_name("mcp_github_list_repos"), Some(("github", "list_repos")));
+        assert_eq!(parse_mcp_tool_name("not_mcp"), None);
+        assert_eq!(parse_mcp_tool_name("mcp_"), None);
+    }
+
+    #[test]
+    fn test_build_mcp_tool_name() {
+        use super::schema::build_mcp_tool_name;
+        assert_eq!(build_mcp_tool_name("filesystem", "read_file"), "mcp_filesystem_read_file");
     }
 }
