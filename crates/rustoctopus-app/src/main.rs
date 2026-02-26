@@ -39,6 +39,7 @@ fn main() {
             commands::mcp::add_mcp_server,
             commands::mcp::remove_mcp_server,
             commands::mcp::toggle_mcp_server,
+            commands::mcp::search_mcp_registry,
         ])
         .setup(|app| {
             // Build tray menu

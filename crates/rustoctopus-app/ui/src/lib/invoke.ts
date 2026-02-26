@@ -88,6 +88,31 @@ export interface McpServerStatus {
   error?: string;
 }
 
+export interface RegistryEnvVar {
+  name: string;
+  description?: string;
+  is_required: boolean;
+}
+
+export interface RegistryPackage {
+  registry_type?: string;
+  identifier?: string;
+  environment_variables: RegistryEnvVar[];
+}
+
+export interface RegistryServer {
+  name: string;
+  description?: string;
+  version?: string;
+  repository_url?: string;
+  packages: RegistryPackage[];
+}
+
+export interface RegistrySearchResult {
+  servers: RegistryServer[];
+  next_cursor?: string;
+}
+
 export const api = {
   getStatus: () => invoke<StatusInfo>("get_status"),
   getConfig: () => invoke<Config>("get_config"),
@@ -104,4 +129,6 @@ export const api = {
   removeMcpServer: (name: string) => invoke<void>("remove_mcp_server", { name }),
   toggleMcpServer: (name: string, enabled: boolean) =>
     invoke<void>("toggle_mcp_server", { name, enabled }),
+  searchMcpRegistry: (query: string, limit?: number) =>
+    invoke<RegistrySearchResult>("search_mcp_registry", { query, limit }),
 };
