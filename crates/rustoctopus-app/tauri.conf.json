@@ -6,8 +6,8 @@
   "build": {
     "frontendDist": "ui/dist",
     "devUrl": "http://localhost:5173",
-    "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build"
+    "beforeDevCommand": "npm run --prefix ../crates/rustoctopus-app/ui dev",
+    "beforeBuildCommand": "npm run --prefix ../crates/rustoctopus-app/ui build"
   },
   "app": {
     "windows": [
@@ -19,10 +19,6 @@
         "fullscreen": false
       }
     ],
-    "trayIcon": {
-      "iconPath": "icons/icon.png",
-      "iconAsTemplate": true
-    },
     "security": {
       "csp": null
     }
