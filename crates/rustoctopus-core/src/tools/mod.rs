@@ -1,5 +1,6 @@
 pub mod cron_tool;
 pub mod filesystem;
+pub mod mcp_tool;
 pub mod message;
 pub mod registry;
 pub mod shell;
