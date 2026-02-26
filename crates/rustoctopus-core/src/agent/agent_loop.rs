@@ -275,6 +275,11 @@ impl AgentLoop {
         let mut messages = initial_messages;
         let mut tools_used = Vec::new();
         let tool_defs = self.tools.get_definitions();
+        info!(
+            tool_count = tool_defs.len(),
+            tool_names = ?tool_defs.iter().map(|t| &t.function.name).collect::<Vec<_>>(),
+            "Agent loop tools available"
+        );
         let params = ChatParams {
             max_tokens: self.max_tokens,
             temperature: self.temperature,

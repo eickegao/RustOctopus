@@ -39,6 +39,7 @@ impl McpTool {
         manager: Arc<Mutex<McpManager>>,
         auto_approved: bool,
     ) -> Self {
+        let tool_parameters = sanitize_schema(tool_parameters);
         Self {
             tool_name,
             tool_description,
@@ -54,6 +55,56 @@ impl McpTool {
     pub fn is_auto_approved(&self) -> bool {
         self.auto_approved
     }
+}
+
+/// Sanitize a JSON Schema so it is accepted by the OpenAI function-calling API.
+///
+/// MCP servers may return schemas that use features not supported by OpenAI,
+/// such as array-style type unions (`[{"type":"number"},{"type":"number"}]`).
+/// This function recursively rewrites such constructs into compatible forms.
+fn sanitize_schema(mut value: Value) -> Value {
+    match &mut value {
+        Value::Object(map) => {
+            // If a schema node has a "type" field that is an array, convert it.
+            // e.g. [{"type":"number"},{"type":"string"}] → {"type":"string"}
+            // e.g. ["number","string"] → {"type":"string"}
+            if let Some(type_val) = map.get("type") {
+                if type_val.is_array() {
+                    let first_type = type_val
+                        .as_array()
+                        .unwrap()
+                        .iter()
+                        .find_map(|v| {
+                            v.as_str().map(String::from).or_else(|| {
+                                v.get("type").and_then(|t| t.as_str()).map(String::from)
+                            })
+                        })
+                        .unwrap_or_else(|| "string".to_string());
+                    map.insert("type".to_string(), Value::String(first_type));
+                }
+            }
+            // If "items" is a tuple-validation array (e.g. [{"type":"number"},{"type":"number"}]),
+            // collapse it to the first element. OpenAI only accepts a single schema for "items".
+            if let Some(items_val) = map.get("items") {
+                if items_val.is_array() {
+                    let first = items_val.as_array().unwrap().first().cloned()
+                        .unwrap_or(Value::Object(Default::default()));
+                    map.insert("items".to_string(), first);
+                }
+            }
+            // Recurse into all values.
+            for val in map.values_mut() {
+                *val = sanitize_schema(val.take());
+            }
+        }
+        Value::Array(arr) => {
+            for item in arr.iter_mut() {
+                *item = sanitize_schema(item.take());
+            }
+        }
+        _ => {}
+    }
+    value
 }
 
 #[async_trait]
@@ -144,6 +195,54 @@ mod tests {
             true,
         );
         assert!(tool.is_auto_approved());
+    }
+
+    #[test]
+    fn test_sanitize_schema_array_type() {
+        let schema = serde_json::json!({
+            "type": "object",
+            "properties": {
+                "pos": {
+                    "type": [{"type": "number"}, {"type": "number"}],
+                    "description": "Position"
+                },
+                "name": {"type": "string"}
+            }
+        });
+        let sanitized = super::sanitize_schema(schema);
+        assert_eq!(sanitized["properties"]["pos"]["type"], "number");
+        assert_eq!(sanitized["properties"]["name"]["type"], "string");
+    }
+
+    #[test]
+    fn test_sanitize_schema_string_array_type() {
+        let schema = serde_json::json!({
+            "type": "object",
+            "properties": {
+                "value": {"type": ["number", "string"]}
+            }
+        });
+        let sanitized = super::sanitize_schema(schema);
+        assert_eq!(sanitized["properties"]["value"]["type"], "number");
+    }
+
+    #[test]
+    fn test_sanitize_schema_tuple_items() {
+        let schema = serde_json::json!({
+            "type": "object",
+            "properties": {
+                "view_range": {
+                    "type": "array",
+                    "items": [{"type": "number"}, {"type": "number"}],
+                    "minItems": 2,
+                    "maxItems": 2
+                }
+            }
+        });
+        let sanitized = super::sanitize_schema(schema);
+        // items should be collapsed from array to single schema
+        assert_eq!(sanitized["properties"]["view_range"]["items"]["type"], "number");
+        assert!(sanitized["properties"]["view_range"]["items"].is_object());
     }
 
     #[tokio::test]
