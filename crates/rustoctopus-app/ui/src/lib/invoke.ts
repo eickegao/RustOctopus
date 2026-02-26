@@ -80,6 +80,14 @@ export interface ToolsConfig {
   restrictToWorkspace: boolean;
 }
 
+export interface McpServerStatus {
+  name: string;
+  enabled: boolean;
+  running: boolean;
+  tool_count: number;
+  error?: string;
+}
+
 export const api = {
   getStatus: () => invoke<StatusInfo>("get_status"),
   getConfig: () => invoke<Config>("get_config"),
@@ -90,4 +98,10 @@ export const api = {
     invoke<CronJob>("add_cron_job", { req }),
   removeCronJob: (jobId: string) => invoke<boolean>("remove_cron_job", { jobId }),
   toggleCronJob: (jobId: string) => invoke<boolean>("toggle_cron_job", { jobId }),
+  listMcpServers: () => invoke<McpServerStatus[]>("list_mcp_servers"),
+  addMcpServer: (name: string, command: string, args: string[], env: Record<string, string>) =>
+    invoke<void>("add_mcp_server", { name, command, args, env }),
+  removeMcpServer: (name: string) => invoke<void>("remove_mcp_server", { name }),
+  toggleMcpServer: (name: string, enabled: boolean) =>
+    invoke<void>("toggle_mcp_server", { name, enabled }),
 };

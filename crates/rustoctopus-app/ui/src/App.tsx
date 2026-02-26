@@ -3,12 +3,14 @@ import Dashboard from "./views/Dashboard";
 import ConfigView from "./views/Config";
 import Channels from "./views/Channels";
 import Cron from "./views/Cron";
+import Mcp from "./views/Mcp";
 
 const navItems = [
   { to: "/", label: "Dashboard" },
   { to: "/config", label: "Config" },
   { to: "/channels", label: "Channels" },
   { to: "/cron", label: "Cron" },
+  { to: "/mcp", label: "MCP" },
 ];
 
 export default function App() {
@@ -44,6 +46,7 @@ export default function App() {
             <Route path="/config" element={<ConfigView />} />
             <Route path="/channels" element={<Channels />} />
             <Route path="/cron" element={<Cron />} />
+            <Route path="/mcp" element={<Mcp />} />
           </Routes>
         </main>
       </div>
