@@ -22,6 +22,7 @@ teloxide = { version = "0.13", features = ["macros"], optional = true }
 tokio-tungstenite = { version = "0.24", features = ["native-tls"], optional = true }
 url = { version = "2", optional = true }
 futures-util = { version = "0.3", optional = true }
+rmcp = { version = "0.16", features = ["client", "transport-child-process"] }
 
 [features]
 default = ["telegram", "feishu", "whatsapp"]
