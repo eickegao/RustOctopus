@@ -402,3 +402,98 @@ mod tests {
         assert!(!b.running);
     }
 }
+
+#[cfg(test)]
+mod integration_tests {
+    use super::*;
+    use std::io::Write;
+
+    fn mock_mcp_server_script() -> String {
+        r#"
+const readline = require('readline');
+const rl = readline.createInterface({ input: process.stdin, terminal: false });
+rl.on('line', (line) => {
+    try {
+        const req = JSON.parse(line);
+        if (req.method === 'initialize') {
+            const resp = {jsonrpc:'2.0',id:req.id,result:{protocolVersion:'2024-11-05',capabilities:{tools:{}},serverInfo:{name:'mock',version:'1.0'}}};
+            process.stdout.write(JSON.stringify(resp) + '\n');
+        } else if (req.method === 'notifications/initialized') {
+            // no response needed
+        } else if (req.method === 'tools/list') {
+            const resp = {jsonrpc:'2.0',id:req.id,result:{tools:[{name:'echo',description:'Echo the input text',inputSchema:{type:'object',properties:{text:{type:'string',description:'Text to echo'}},required:['text']}}]}};
+            process.stdout.write(JSON.stringify(resp) + '\n');
+        } else if (req.method === 'tools/call') {
+            const text = (req.params && req.params.arguments && req.params.arguments.text) || '';
+            const resp = {jsonrpc:'2.0',id:req.id,result:{content:[{type:'text',text:text}],isError:false}};
+            process.stdout.write(JSON.stringify(resp) + '\n');
+        }
+    } catch(e) {
+        // ignore parse errors
+    }
+});
+"#.to_string()
+    }
+
+    #[tokio::test]
+    async fn test_full_mcp_flow_with_mock_server() {
+        // Skip if node is not available
+        if std::process::Command::new("node").arg("--version").output().is_err() {
+            eprintln!("Skipping: node not found");
+            return;
+        }
+
+        // Write mock server script to temp file
+        let mut tmp = tempfile::NamedTempFile::new().unwrap();
+        write!(tmp, "{}", mock_mcp_server_script()).unwrap();
+        let script_path = tmp.path().to_string_lossy().to_string();
+
+        // Create manager and start mock server
+        let mut mgr = McpManager::new();
+        let config = McpServerConfig {
+            command: "node".into(),
+            args: vec![script_path],
+            env: HashMap::new(),
+            enabled: true,
+            auto_approve: vec!["echo".to_string()],
+        };
+
+        // Start server
+        let result = mgr.start_server("mock", config).await;
+        assert!(result.is_ok(), "Failed to start mock server: {:?}", result.err());
+        assert_eq!(mgr.running_count(), 1);
+
+        // Verify tools were discovered
+        let defs = mgr.all_tool_defs();
+        assert_eq!(defs.len(), 1);
+        assert_eq!(defs[0].0, "mcp_mock_echo"); // namespaced name
+        assert!(!defs[0].1.is_empty()); // has description
+
+        // Call the echo tool
+        let result = mgr.call_tool("mock", "echo", serde_json::json!({"text": "hello world"})).await;
+        assert!(result.is_ok(), "Tool call failed: {:?}", result.err());
+        assert_eq!(result.unwrap(), "hello world");
+
+        // Verify auto-approve
+        assert!(mgr.is_auto_approved("mock", "echo"));
+        assert!(!mgr.is_auto_approved("mock", "other_tool"));
+
+        // Check statuses
+        let mut configs = HashMap::new();
+        configs.insert("mock".to_string(), McpServerConfig {
+            command: "node".into(),
+            args: vec![],
+            env: HashMap::new(),
+            enabled: true,
+            auto_approve: vec!["echo".to_string()],
+        });
+        let statuses = mgr.server_statuses(&configs);
+        assert_eq!(statuses.len(), 1);
+        assert!(statuses[0].running);
+        assert_eq!(statuses[0].tool_count, 1);
+
+        // Stop server
+        mgr.stop_all();
+        assert_eq!(mgr.running_count(), 0);
+    }
+}
