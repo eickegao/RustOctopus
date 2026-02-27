@@ -80,39 +80,6 @@ export interface ToolsConfig {
   restrictToWorkspace: boolean;
 }
 
-export interface McpServerStatus {
-  name: string;
-  enabled: boolean;
-  running: boolean;
-  tool_count: number;
-  error?: string;
-}
-
-export interface RegistryEnvVar {
-  name: string;
-  description?: string;
-  is_required: boolean;
-}
-
-export interface RegistryPackage {
-  registry_type?: string;
-  identifier?: string;
-  environment_variables: RegistryEnvVar[];
-}
-
-export interface RegistryServer {
-  name: string;
-  description?: string;
-  version?: string;
-  repository_url?: string;
-  packages: RegistryPackage[];
-}
-
-export interface RegistrySearchResult {
-  servers: RegistryServer[];
-  next_cursor?: string;
-}
-
 export const api = {
   getStatus: () => invoke<StatusInfo>("get_status"),
   getConfig: () => invoke<Config>("get_config"),
@@ -123,12 +90,4 @@ export const api = {
     invoke<CronJob>("add_cron_job", { req }),
   removeCronJob: (jobId: string) => invoke<boolean>("remove_cron_job", { jobId }),
   toggleCronJob: (jobId: string) => invoke<boolean>("toggle_cron_job", { jobId }),
-  listMcpServers: () => invoke<McpServerStatus[]>("list_mcp_servers"),
-  addMcpServer: (name: string, command: string, args: string[], env: Record<string, string>) =>
-    invoke<void>("add_mcp_server", { name, command, args, env }),
-  removeMcpServer: (name: string) => invoke<void>("remove_mcp_server", { name }),
-  toggleMcpServer: (name: string, enabled: boolean) =>
-    invoke<void>("toggle_mcp_server", { name, enabled }),
-  searchMcpRegistry: (query: string, limit?: number) =>
-    invoke<RegistrySearchResult>("search_mcp_registry", { query, limit }),
 };

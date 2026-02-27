@@ -3,7 +3,6 @@ pub mod bus;
 pub mod channels;
 pub mod config;
 pub mod cron;
-pub mod mcp;
 pub mod providers;
 pub mod session;
 pub mod tools;

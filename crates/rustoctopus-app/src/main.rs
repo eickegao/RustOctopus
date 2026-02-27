@@ -35,11 +35,6 @@ fn main() {
             commands::cron::add_cron_job,
             commands::cron::remove_cron_job,
             commands::cron::toggle_cron_job,
-            commands::mcp::list_mcp_servers,
-            commands::mcp::add_mcp_server,
-            commands::mcp::remove_mcp_server,
-            commands::mcp::toggle_mcp_server,
-            commands::mcp::search_mcp_registry,
         ])
         .setup(|app| {
             // Build tray menu

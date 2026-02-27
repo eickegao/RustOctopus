@@ -253,64 +253,6 @@ pub struct ToolsConfig {
 }
 
 // ---------------------------------------------------------------------------
-// McpConfig
-// ---------------------------------------------------------------------------
-
-/// MCP (Model Context Protocol) configuration.
-#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "camelCase", default)]
-pub struct McpConfig {
-    pub enabled: bool,
-    pub servers: HashMap<String, McpServerConfig>,
-}
-
-// ---------------------------------------------------------------------------
-// McpServerConfig
-// ---------------------------------------------------------------------------
-
-/// Configuration for a single MCP server.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "camelCase", default)]
-pub struct McpServerConfig {
-    pub command: String,
-    pub args: Vec<String>,
-    pub env: HashMap<String, String>,
-    pub enabled: bool,
-    pub auto_approve: Vec<String>,
-}
-
-impl Default for McpServerConfig {
-    fn default() -> Self {
-        Self {
-            command: String::new(),
-            args: Vec::new(),
-            env: HashMap::new(),
-            enabled: true,
-            auto_approve: Vec::new(),
-        }
-    }
-}
-
-// ---------------------------------------------------------------------------
-// MCP tool name helpers
-// ---------------------------------------------------------------------------
-
-/// Parse "mcp_filesystem_read_file" -> ("filesystem", "read_file")
-pub fn parse_mcp_tool_name(namespaced: &str) -> Option<(&str, &str)> {
-    let rest = namespaced.strip_prefix("mcp_")?;
-    let idx = rest.find('_')?;
-    if idx == 0 || idx == rest.len() - 1 {
-        return None;
-    }
-    Some((&rest[..idx], &rest[idx + 1..]))
-}
-
-/// Build "mcp_filesystem_read_file" from ("filesystem", "read_file")
-pub fn build_mcp_tool_name(server: &str, tool: &str) -> String {
-    format!("mcp_{}_{}", server, tool)
-}
-
-// ---------------------------------------------------------------------------
 // Config (root)
 // ---------------------------------------------------------------------------
 
@@ -323,7 +265,6 @@ pub struct Config {
     pub providers: ProvidersConfig,
     pub gateway: GatewayConfig,
     pub tools: ToolsConfig,
-    pub mcp: McpConfig,
 }
 
 #[cfg(test)]

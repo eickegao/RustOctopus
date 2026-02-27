@@ -5,7 +5,6 @@
 //! reserved word.
 
 use std::path::PathBuf;
-use std::sync::Arc;
 
 use regex::Regex;
 use serde_json::json;
@@ -17,14 +16,11 @@ use crate::bus::events::{InboundMessage, OutboundMessage};
 use crate::bus::queue::MessageBus;
 use crate::config::factory::resolve_workspace_path;
 use crate::config::schema::Config;
-use crate::config::{parse_mcp_tool_name, McpConfig};
-use crate::mcp::manager::McpManager;
 use crate::providers::traits::{
     ChatMessage, ChatParams, LlmProvider, Role, ToolCallFunction, ToolCallMessage, ToolDefinition,
 };
 use crate::session::manager::{Session, SessionManager};
 use crate::tools::filesystem::{EditFileTool, ListDirTool, ReadFileTool, WriteFileTool};
-use crate::tools::mcp_tool::McpTool;
 use crate::tools::registry::ToolRegistry;
 use crate::tools::shell::ExecTool;
 use crate::tools::web::{WebFetchTool, WebSearchTool};
@@ -51,8 +47,6 @@ pub struct AgentLoop {
     pub(crate) tools: ToolRegistry,
     inbound_rx: mpsc::UnboundedReceiver<InboundMessage>,
     _running: bool,
-    pub(crate) mcp_manager: Option<Arc<tokio::sync::Mutex<McpManager>>>,
-    mcp_config: McpConfig,
 }
 
 impl AgentLoop {
@@ -100,8 +94,6 @@ impl AgentLoop {
             tools,
             inbound_rx,
             _running: false,
-            mcp_manager: None,
-            mcp_config: McpConfig::default(),
         }
     }
 
@@ -121,46 +113,7 @@ impl AgentLoop {
         agent.temperature = config.agents.defaults.temperature;
         agent.max_tokens = config.agents.defaults.max_tokens;
         agent.memory_window = config.agents.defaults.memory_window as usize;
-        agent.mcp_config = config.mcp;
         agent
-    }
-
-    /// Start MCP servers and register their tools if MCP is enabled.
-    ///
-    /// Reads `mcp_config`, spawns each enabled MCP server via [`McpManager`],
-    /// discovers their tools, and registers them into the tool registry as
-    /// [`McpTool`] instances.
-    pub(crate) async fn start_mcp_servers(&mut self, mcp_config: &McpConfig) {
-        if !mcp_config.enabled || mcp_config.servers.is_empty() {
-            return;
-        }
-
-        let mcp_mgr = Arc::new(tokio::sync::Mutex::new(McpManager::new()));
-
-        {
-            let mut mgr = mcp_mgr.lock().await;
-            mgr.start_all(&mcp_config.servers).await;
-
-            // Register discovered tools
-            for (name, desc, params) in mgr.all_tool_defs() {
-                if let Some((server, tool)) = parse_mcp_tool_name(&name) {
-                    let server = server.to_string();
-                    let tool = tool.to_string();
-                    let auto = mgr.is_auto_approved(&server, &tool);
-                    self.tools.register(Box::new(McpTool::new(
-                        name,
-                        desc,
-                        params,
-                        server,
-                        tool,
-                        mcp_mgr.clone(),
-                        auto,
-                    )));
-                }
-            }
-        }
-
-        self.mcp_manager = Some(mcp_mgr);
     }
 
     /// Main loop: receive messages from the bus, process them, and send responses.
@@ -169,11 +122,6 @@ impl AgentLoop {
     /// stopped externally by dropping the inbound sender.
     pub async fn run(&mut self) {
         self._running = true;
-
-        // Start MCP servers before entering the message loop.
-        let mcp_config = self.mcp_config.clone();
-        self.start_mcp_servers(&mcp_config).await;
-
         info!("AgentLoop started");
 
         loop {
